@@ -1,93 +1,76 @@
-# HARPU: Week 1 Agent Context & Handoff Guide
+# HARPU: Week 1 Progress Tracker & Milestones
 
-> **Purpose:** This document maintains state, architectural constraints, and task progress across new AI agent sessions and conversation threads to avoid context fragmentation. Any new agent thread should read this file first.
+> **NOTE FOR ALL AI ASSISTANTS:**  
+> Before reading this file, review and comply with **`Documentation/agent_rules.md`**.  
+> **Rule Reminder:** Your primary role is planning and debugging. **Do NOT generate or modify source code unless explicitly commanded by the user.** Record all actions in `Documentation/AI_Documentation/session_log.md`.
 
 ---
 
-## 1. Project Identity & Repository Overview
+## 1. Project Quick Reference
 
-* **Project Name:** **HARPU** (Hardware-Accelerated Raymarching Processing Unit)
-* **Full Title:** Real-Time Dynamic SDF Raymarching & Fluid Physics Sandbox
-* **Course:** ECE 385 (Digital Systems Laboratory) - UIUC
+* **Project:** **HARPU** (Hardware-Accelerated Raymarching Processing Unit)
+* **Target:** AMD/Xilinx Spartan-7 `XC7S50-CSGA324-1` (Urbana Board)
+* **Repo:** `https://github.com/DepthPixels/harpu-core.git`
 * **Team:** `pdeswal2` & `ac176`
-* **Target Hardware:** RealDigital Urbana FPGA Board
-* **FPGA Part Number:** AMD/Xilinx Spartan-7 **`XC7S50-CSGA324-1`**
-  * *Resource Budget:* 32,600 LUTs, 65,200 FFs, 120 DSP48E1 slices, 75 36Kb BRAM blocks (337.5 KB).
-* **Git Repository:** `https://github.com/DepthPixels/harpu-core.git`
-  * *Local Working Directory:* `F:\ECE 385 Final Project`
-  * *Active Vivado Project:* `F:\ECE 385 Final Project\Final_Project\Final_Project.xpr`
-  * *Documentation Folder:* `F:\ECE 385 Final Project\Documentation\`
+* **Current Phase:** Week 1 — Project Inception, Repository Setup & Video Bring-Up
+* **Upcoming Critical Deadline:** **Friday, Nov 20 — Mid-Project Checkpoint (5 pts)**
 
 ---
 
-## 2. System Architecture & Core Concept
+## 2. Week 1 Progress Checklist (Nov 9 – Nov 15)
 
-Instead of conventional polygon rasterization (which requires vertex transformations, triangle setup, and Z-buffer memory), HARPU is an **implicit surface raymarcher** executing iterative sphere-tracing directly in hardware.
-
-### Key Architectural Pillars:
-1. **Procedural Background:**
-   * Infinite terrain waves and 3D Gyroid caverns:
-     $$\sin(x)\cos(y) + \sin(y)\cos(z) + \sin(z)\cos(x) = 0$$
-   * Evaluated entirely in fixed-point math with **0 bytes of RAM**.
-2. **Native Geometric Sculpting Toolbox:**
-   * **4 Base Primitives:** Sphere, Sharp Box (Inigo Quilez exact box), Capsule (continuous tunnel boring), and Torus (arches/rings).
-   * **3 Surface Modifiers:** Rock Craggle Noise (blasted rock), Excavator Ribbing (TBM drill rings), and Bevel Rounding ($d' = d - r$).
-   * **Dynamic CSG:** Real-time boolean subtraction (`smax(d_scene, -d_tool)`) and union (`smin`).
-3. **PBD Fluid Physics Sandbox:**
-   * 8 dynamic liquid droplets simulated in MicroBlaze and rendered in hardware using polynomial smooth-minimum (`smin`) metaball blending for realistic surface tension and pooling.
-4. **Lighting Engine:**
-   * 4-tap tetrahedral finite-difference gradient estimator ($\nabla d$).
-   * Blinn-Phong specular highlights + distance fog.
-   * **Crevice Ambient Occlusion (AO):** 1-tap forward probe along the normal vector darkening subterranean shafts.
-5. **Video & Memory Pipeline:**
-   * **Internal Render Resolution:** Parameterized $320 \times 180$ or $320 \times 240$ buffer in dual-port BRAM.
-   * **Output Display Resolution:** $640 \times 480$ @ 60 Hz via the provided RealDigital `hdmi_tx` IP (`encode.v` + `serdes_10_to_1.v`).
-   * **Zero DDR3 Dependency:** All Week 1–2 buffers stay 100% in on-chip BRAM to eliminate memory arbitration bugs.
-6. **SoC Partitioning:**
-   * **MicroBlaze (C):** MAX3421E USB Host polling (WASD walking, mouse look), dynamic CSG smart merging, undo history stack, and 8-droplet PBD physics loop.
-   * **FPGA Logic (SystemVerilog):** 100–125 MHz pipelined Raymarch Processing Unit, distance ALUs, lighting, video scanout upscaler, and PWM audio.
+### Status Legend
+- [x] Completed
+- [/] In Progress
+- [ ] Not Started
+- [!] Blocked / Needs Attention
 
 ---
 
-## 3. Week 1 Objectives & Daily Schedule (Nov 9 – Nov 15)
-
-### Phase 1: Video Scanout Bring-Up (Days 1–2)
-- [ ] Import the provided RealDigital `hdmi_tx` IP (`encode.v`, `serdes_10_to_1.v`) into `Final_Project.xpr`.
-- [ ] Write `vga_controller.sv` / `sync_generator.sv` for $640 \times 480$ @ 60 Hz ($25.175\text{ MHz}$ pixel clock).
-- [ ] Generate standard color-bar test patterns and static geometric gradient patterns on a physical monitor.
-- [ ] Implement the dual-line buffer / $2\times$ pixel doubler ($320 \times 240 \to 640 \times 480$).
-
-### Phase 2: Core Raymarching RTL in Simulation (Days 3–4)
-- [ ] **Fixed-Point Ray Direction Generator:** Compute normalized ray direction $\vec{r}_d$ from screen coordinates $(u, v)$ and camera rotation matrix $R_{3\times3}$ using $Q8.8$ arithmetic.
-- [ ] **Primitive Distance ALUs:**
-  - Sphere: $\|\vec{p} - \vec{c}\| - r$
-  - Sharp Box: $\|\max(|\vec{p}| - \vec{b}, 0)\| + \min(\max(q_x, \max(q_y, q_z)), 0)$
-  - Gyroid Cavern formula: $\sin(x)\cos(y) + \sin(y)\cos(z) + \sin(z)\cos(x)$
-- [ ] **Raymarch Stepper Loop:** Finite state machine / systolic pipeline iterating $t \leftarrow t + d$.
-- [ ] **Tetrahedral Surface Normal Unit:** 4-sample finite-difference ALU.
-- [ ] **Blinn-Phong + Crevice AO:** Simple directional sun light + 1-tap AO probe.
-
-### Phase 3: Hardware Verification (Day 5)
-- [ ] Connect the single-core raymarcher output into the dual-port BRAM buffer.
-- [ ] Output a static or auto-rotating 3D sphere / box directly to the physical HDMI monitor.
+### Step 1: Environment & Project Setup
+- [x] Initial proposal drafted, peer-reviewed, and submitted.
+- [x] Proposal exported to PDF (`Documentation/ECE385_Final_Project_Proposal.pdf`).
+- [x] Git repository initialized (`main` branch) and linked to GitHub (`DepthPixels/harpu-core`).
+- [x] Vivado-tailored `.gitignore` configured and verified against `Final_Project/`.
+- [x] Vivado project created in `Final_Project/Final_Project.xpr`.
+- [x] Agent rules (`agent_rules.md`) and session log established.
 
 ---
 
-## 4. Hard Constraints for All Agents
-
-1. **Strictly Fixed-Point Arithmetic:** Never use SystemVerilog `real` or floating-point types in synthesizable code. Standardize on $Q8.8$ (16-bit signed, 8-bit integer, 8-bit fractional) or $Q16.16$ where large coordinate ranges are required.
-2. **Keep the Baseline De-risked:** Do not attempt custom 371.25 MHz TMDS serialization or DDR3 memory controllers during Week 1. Use the provided RealDigital `hdmi_tx` IP and on-chip BRAM.
-3. **Mid-Checkpoint Target (Nov 20):** All work in Week 1 must directly support the Week 2 mid-checkpoint goal: **a live hardware demo where the TA can move the USB mouse to look around and click to carve a hole out of 3D geometry in real time.**
-4. **Maintain the Git Tree Clean:** Keep all generated files within the `.gitignore` rules. Commit verified RTL modules incrementally with descriptive messages.
+### Step 2: Video Path Bring-Up (Days 1–2 Target)
+- [ ] Import RealDigital `hdmi_tx` IP (`encode.v`, `serdes_10_to_1.v`) into Vivado project.
+- [ ] Design custom `sync_generator.sv` for standard $640 \times 480$ @ 60 Hz timing ($25.175\text{ MHz}$ pixel clock).
+- [ ] Create simple color-bar / test-pattern top-level module.
+- [ ] Map differential TMDS clock/data pins in `urbana.xdc`.
+- [ ] Synthesize, program bitstream, and verify rock-solid video output on physical monitor.
+- [ ] Implement $2\times$ pixel upscaler / dual-line buffer ($320 \times 240 \to 640 \times 480$).
 
 ---
 
-## 5. Important File Locations
+### Step 3: Raymarch RTL Architecture in Simulation (Days 3–4 Target)
+- [ ] Implement fixed-point ray direction generator ($(u,v) \to \vec{r}_d$ in $Q8.8$).
+- [ ] Implement core distance ALUs in SystemVerilog:
+  - [ ] Sphere SDF: $\|\vec{p} - \vec{c}\| - r$
+  - [ ] Sharp Box SDF: Inigo Quilez exact box logic
+  - [ ] Procedural Gyroid ALU: $\sin(x)\cos(y) + \sin(y)\cos(z) + \sin(z)\cos(x)$
+- [ ] Implement sphere-tracing step FSM / pipeline ($t \leftarrow t + d$).
+- [ ] Implement 4-tap tetrahedral normal estimator ($\nabla d$).
+- [ ] Implement Blinn-Phong diffuse/specular lighting + 1-tap Crevice Ambient Occlusion.
+- [ ] Verify raymarcher output in ModelSim / Vivado testbench against reference images.
 
-| File / Directory | Purpose |
-| :--- | :--- |
-| `Documentation/ECE385_Final_Project_Proposal.pdf` | Official signed-off project proposal |
-| `Documentation/ECE385_Final_Project_Proposal.md` | Proposal Markdown source |
-| `Documentation/agents_week_1.md` | **This file** (Agent context handoff) |
-| `Final_Project/Final_Project.xpr` | Active Vivado project file |
-| `.gitignore` | Project git exclusions (Vivado & Vitis build caches) |
+---
+
+### Step 4: Hardware Integration & First 3D Output (Day 5 Target)
+- [ ] Connect raymarcher pixel output stream to dual-port BRAM buffer.
+- [ ] Scan out raymarched scene to physical HDMI monitor.
+- [ ] Milestone Deliverable: A static or rotating 3D sphere/box on the monitor at 60 FPS.
+
+---
+
+## 3. Active Blockers & Debugging Log
+*Currently no active blockers. Project setup and documentation complete.*
+
+---
+
+## 4. Current Workstream & Next Immediate Task
+* **Immediate Task:** Bring up the $640 \times 480$ @ 60 Hz video test pattern using the provided RealDigital `hdmi_tx` IP and verify stable sync on the monitor.
