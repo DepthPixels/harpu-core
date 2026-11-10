@@ -1,0 +1,90 @@
+# ==============================================================================
+# Gitignore for ECE 385 Final Project (Vivado + Vitis / MicroBlaze on Urbana)
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Vivado Internal & Temporary Files
+# ------------------------------------------------------------------------------
+.Xil/
+*.jou
+*.log
+*.str
+*.pb
+*.wcp
+*.wdf
+*.zip
+*.tar.gz
+clockInfo.txt
+webtalk*.log
+webtalk*.xml
+
+# Vivado Project Run & Build Directories (Re-creatable from sources)
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.gen/
+
+# Synthesis & Implementation Checkpoints / Reports
+*.dcp
+*.rpt
+*.vdi
+*.bit
+*.bin
+*.mcs
+*.prm
+
+# ------------------------------------------------------------------------------
+# Vitis / Xilinx SDK / Eclipse Workspace Metadata & Build Artifacts
+# ------------------------------------------------------------------------------
+# Workspace state (machine-specific paths)
+.metadata/
+.analytics/
+.wsdata/
+_ide/
+*.launch
+
+# Compiled objects, dependencies, and executables
+Debug/
+Release/
+*/Debug/
+*/Release/
+bin/
+obj/
+*.o
+*.obj
+*.d
+*.elf
+*.size
+*.map
+
+# ------------------------------------------------------------------------------
+# OS & Editor Artifacts
+# ------------------------------------------------------------------------------
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor directories (keep personal configs local)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+.idea/
+*.swp
+*.bak
+*~
+*.tmp
+
+# ------------------------------------------------------------------------------
+# Important: Keep Essential Source Files Tracked!
+# ------------------------------------------------------------------------------
+# Ensure your HDL sources, C sources, constraints, and docs are never ignored
+!Documentation/
+!*.sv
+!*.v
+!*.vhd
+!*.xdc
+!*.c
+!*.h
+!*.tcl

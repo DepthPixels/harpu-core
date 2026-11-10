@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ECE 385 Final Project Proposal</title>
+<style>
+  @page {
+    size: letter;
+    margin: 16mm 16mm 16mm 16mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1f2328;
+    line-height: 1.5;
+    font-size: 10pt;
+    margin: 0;
+    padding: 0;
+  }
+  h1 {
+    font-size: 16pt;
+    margin: 0 0 4px 0;
+    color: #0969da;
+    border-bottom: 2px solid #0969da;
+    padding-bottom: 4px;
+  }
+  h2 {
+    font-size: 13pt;
+    margin: 2px 0 6px 0;
+    color: #24292f;
+  }
+  h3 {
+    font-size: 11pt;
+    margin: 14px 0 6px 0;
+    color: #1f2328;
+    border-bottom: 1px solid #d0d7de;
+    padding-bottom: 2px;
+  }
+  h4 {
+    font-size: 10pt;
+    margin: 10px 0 4px 0;
+    color: #24292f;
+  }
+  p {
+    margin: 4px 0 8px 0;
+    text-align: justify;
+  }
+  ul, ol {
+    margin: 4px 0 8px 0;
+    padding-left: 20px;
+  }
+  li {
+    margin-bottom: 3px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 12px 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #d0d7de;
+    padding: 5px 8px;
+    text-align: left;
+  }
+  th {
+    background-color: #f6f8fa;
+    font-weight: 600;
+  }
+  .rubric-table {
+    width: 240px;
+    margin: 6px 0 12px 0;
+    font-size: 8.5pt;
+  }
+  .rubric-table th, .rubric-table td {
+    padding: 3px 6px;
+  }
+  pre {
+    background-color: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    padding: 8px;
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+    font-size: 7.2pt;
+    line-height: 1.25;
+    overflow-x: auto;
+    page-break-inside: avoid;
+    margin: 6px 0 10px 0;
+  }
+  code {
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 8.5pt;
+    background-color: #f0f2f5;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  .meta-block {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .meta-info {
+    font-size: 9.5pt;
+  }
+  .badge {
+    display: inline-block;
+    padding: 1px 5px;
+    font-size: 8pt;
+    font-weight: 600;
+    border-radius: 10px;
+    background-color: #dafbe1;
+    color: #1a7f37;
+    border: 1px solid #aceebb;
+  }
+</style>
+</head>
+<body>
+
+<h1>ECE 385 Final Project Proposal</h1>
+<h2>Project Name: Real-Time Dynamic SDF Raymarching &amp; Fluid Physics Sandbox</h2>
+
+<div class="meta-block">
+  <div class="meta-info">
+    <strong>Students:</strong> pdeswal2 &amp; ac176<br>
+    <strong>Target Platform:</strong> RealDigital Urbana Board (AMD/Xilinx Spartan-7 <code>XC7S50-CSGA324-1</code>)
+  </div>
+  <div>
+    <table class="rubric-table">
+      <thead>
+        <tr><th>Item</th><th style="text-align:right;">Points</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Idea and Overview</td><td style="text-align:right;">1.0</td></tr>
+        <tr><td>Block Diagram</td><td style="text-align:right;">1.0</td></tr>
+        <tr><td>List of Features</td><td style="text-align:right;">1.0</td></tr>
+        <tr><td>Expected Difficulty &amp; Justification</td><td style="text-align:right;">1.0</td></tr>
+        <tr><td>Proposed Timeline</td><td style="text-align:right;">1.0</td></tr>
+        <tr><th>Total</th><th style="text-align:right;">5.0</th></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h3>1. Idea and Overview</h3>
+<p>
+We propose to design and implement a <strong>real-time 3D implicit surface (Signed Distance Field) raymarching graphics accelerator and interactive physical fluid sandbox</strong> on the FPGA. Rather than using conventional polygon rasterization (which requires heavy vertex transformation pipelines, triangle clipping, and Z-buffer memory traffic), our system computes continuous mathematical surfaces on-the-fly using pipelined fixed-point arithmetic.
+</p>
+<p>
+The baseline engine natively features an <strong>infinite procedural background</strong> (featuring undulating terrain and organic 3D Gyroid caverns generated purely in math with zero RAM overhead: <code>sin(x)cos(y) + sin(y)cos(z) + sin(z)cos(x) = 0</code>) alongside a comprehensive <strong>geometric sculpting toolbox</strong> consisting of four native analytic primitives (<strong>Sphere, Sharp Box, Capsule, and Torus</strong>) and three surface texture modifiers (<strong>Rock Craggle noise, Excavator Ribbing, and Bevel rounding</strong>). The system supports real-time <strong>Constructive Solid Geometry (CSG)</strong>, allowing a user to walk around in first-person and dynamically sculpt, hollow out, and carve true 3D caves, flat-floored chambers, and cylindrical shafts without polygonal re-meshing or frame stutter.
+</p>
+<p>
+To elevate this beyond a static graphics demo into an interactive physical digital system, we couple the raymarcher with an interactive <strong>Position-Based Fluids (PBD) liquid simulation</strong>. Liquid droplets flow across the landscape, collide against the terrain distance field in O(1) time, and coalesce into continuous liquid bodies using polynomial smooth-minimum (<code>smin</code>) metaball blending. The rendering engine incorporates <strong>Crevice Ambient Occlusion (AO)</strong> directly in the baseline shading path, providing deep visual realism to subterranean caverns.
+</p>
+<p>
+The architecture is fully parameterized (<code>RENDER_WIDTH</code>, <code>NUM_PRIMITIVES</code>, <code>NUM_CORES</code>), establishing a rock-solid <strong>320x180 or 320x240 baseline</strong> upscaled to a standard <strong>640x480 @ 60 Hz</strong> video signal over HDMI using the provided RealDigital IP, with modular extensions for advanced space-warping tools, 3D spatial binning, and dual-core scaling.
+</p>
+
+<h4>Hardware vs. Software Partitioning (SoC Architecture):</h4>
+<ul>
+  <li><strong>Hardware (SystemVerilog):</strong>
+    <ul>
+      <li><strong>Pipelined Raymarch Processing Unit (RPU):</strong> Pipelined fixed-point ALU running at 100–125 MHz computing ray generation, procedural terrain/Gyroid math, analytic distance estimators (Sphere, Sharp Box, Capsule, Torus), surface modifiers (Craggle, Ribbing, Bevel), and polynomial <code>smin</code>/<code>smax</code> CSG operations.</li>
+      <li><strong>Dynamic Primitive Buffer:</strong> On-chip BRAM array holding active CSG primitives with bounding-box early-exit culling and smart compaction.</li>
+      <li><strong>Surface Normal, Lighting &amp; AO Engine:</strong> 4-tap tetrahedral finite-difference gradient estimator, Blinn-Phong specular highlights, distance fog, and single-tap forward crevice ambient occlusion.</li>
+      <li><strong>HDMI Video Scanout &amp; Compositor:</strong> Built upon the verified RealDigital <code>hdmi_tx</code> IP (<code>encode.v</code> + <code>serdes_10_to_1</code>), driven by our custom video sync generator, with an on-chip dual-line buffer / BRAM scanout engine performing 2x upscaling to 640x480 @ 60 Hz.</li>
+      <li><strong>Hardware Overlays &amp; Audio:</strong> Hardware crosshair, holographic tool preview wireframe, FPS counter font ROM, and PWM audio tone synthesizer.</li>
+    </ul>
+  </li>
+  <li><strong>Software (MicroBlaze C Code):</strong>
+    <ul>
+      <li><strong>I/O &amp; Player Kinematics:</strong> Polls USB HID packets via the MAX3421E host controller; computes camera rotation matrices and player WASD walking with terrain collision.</li>
+      <li><strong>Dynamic CSG Manager with Smart Merge:</strong> Manages the active primitive list in BRAM; detects overlapping crater spheres and expands their radii rather than consuming new slots.</li>
+      <li><strong>Fluid Physics Solver:</strong> Computes droplet velocities, gravitational acceleration, particle-particle repulsion, and boundary restitution against the distance field.</li>
+      <li><strong>Interactive Undo Stack:</strong> Maintains an edit history stack in memory to pop primitives and revert terrain modifications on demand.</li>
+    </ul>
+  </li>
+</ul>
+
+<h4>Equipment &amp; Demo Plan:</h4>
+<p>
+<strong>Demo Equipment:</strong> RealDigital Urbana board, standard USB mouse and keyboard (connected via USB hub to the on-board MAX3421E host port), micro-USB programming cable, and an HDMI monitor.<br>
+<strong>Demo Execution:</strong> The user walks through the landscape using WASD and looks around with the mouse. The user can switch sculpting tools (sharp boxes for flat rooms, capsules for tunnels, toruses for arches, craggly rock for rough mining) and carve subterranean passages. The user then spawns liquid droplets and carves a trench, demonstrating live fluid flowing down the mountain and pooling into the hollowed basin at a steady 60 FPS.<br>
+<strong>Existing Code / Libraries:</strong> We will utilize the course-provided USB HID software stack for the MAX3421E (Lab 7) and the RealDigital HDMI serialization IP (<code>hdmi_tx</code>). All raymarching math, CSG pipelines, video sync generators, and fluid solvers will be developed from scratch in SystemVerilog and C.
+</p>
+
+<h3>2. Block Diagram</h3>
+<pre>
+                                  URBANA FPGA BOARD TOP-LEVEL
+ ┌────────────────────────────────────────────────────────────────────────────────────────────┐
+ │                                                                                            │
+ │   ┌───────────────────────┐                                                                │
+ │   │   MAX3421E USB Host   │                                                                │
+ │   │   (Mouse &amp; Keyboard)  │                                                                │
+ │   └──────────┬────────────┘                                                                │
+ │              │ (SPI)                                                                       │
+ │              ▼                                                                             │
+ │   ┌───────────────────────────────────────────────────┐                                    │
+ │   │           MicroBlaze Soft-Core Processor          │                                    │
+ │   │  • USB HID Parsing &amp; Camera 6-DOF Math            │                                    │
+ │   │  • Fluid Physics Solver (8-Droplet PBD)           │                                    │
+ │   │  • CSG Allocator with Smart Sphere Merging        │                                    │
+ │   │  • Dynamic "Undo" History Stack                   │                                    │
+ │   └──────────┬────────────────────────────┬───────────┘                                    │
+ │              │ (AXI-Lite Registers)       │ (Direct BRAM Write Port)                       │
+ │              ▼                            ▼                                                │
+ │      [ Camera Matrix,            [ Dynamic Primitive BRAM Array ]                          │
+ │        Fluid Droplet States,     [ 64-128 Primitives @ 128-bit  ]                          │
+ │        Tool Parameters ]                  │                                                │
+ │              │                            │ (Single-Cycle Read Port)                       │
+ │              ├────────────────────────────┤                                                │
+ │              ▼                            ▼                                                │
+ │   ┌──────────────────────────────────────────────────────────────────┐                     │
+ │   │        Pipelined Raymarch Processing Unit (100–125 MHz)          │                     │
+ │   │  • Fixed-Point Ray Direction Generator (Matrix Transform)        │                     │
+ │   │  • Procedural Bedrock ALU (Gyroid Caverns &amp; Terrain Waves)       │                     │
+ │   │  • Native Primitives Core: Sphere, Sharp Box, Capsule, Torus     │                     │
+ │   │  • Surface Modifiers: Rock Craggle Noise, Ribbing, Bevel         │                     │
+ │   │  • Modular Domain Warpers (Arc Bend, Taper, Twist, Shear)        │                     │
+ │   │  • CSG Combiner (smin Add, smax Carve, 8 Fluid Metaballs)        │                     │
+ │   │  • Tetrahedral Surface Normal Estimator (4 Taps)                 │                     │
+ │   │  • Shading Engine: Blinn-Phong + Crevice Ambient Occlusion (AO)  │                     │
+ │   └────────────────────────────────┬─────────────────────────────────┘                     │
+ │                                    │ (Pixel Stream Writes)                                 │
+ │                                    ▼                                                       │
+ │   ┌──────────────────────────────────────────────────────────────────┐                     │
+ │   │     Dual-Port Framebuffer / Line-Buffer BRAM (320x180 / 320x240) │                     │
+ │   └────────────────────────────────┬─────────────────────────────────┘                     │
+ │                                    │ (25.175 MHz Scanout Read Port)                        │
+ │                                    ▼                                                       │
+ │   ┌──────────────────────────────────────────────────────────────────┐                     │
+ │   │              Custom Video Timing Generator &amp; Compositor          │                     │
+ │   │  • 2x Hardware Pixel Upscaler to 640x480 @ 60 Hz                 │                     │
+ │   │  • Hardware Crosshair &amp; Holographic Tool Wireframe Overlay       │                     │
+ │   │  • Hardware FPS Counter (Font ROM Overlay)                       │                     │
+ │   └────────────────────────────────┬─────────────────────────────────┘                     │
+ │                                    │ (RGB Data + Sync)                                     │
+ │                                    ▼                                                       │
+ │   ┌──────────────────────────────────────────────────────────┐      ┌───────────────────┐  │
+ │   │          Provided RealDigital HDMI IP (hdmi_tx)          │      │  PWM Audio Core   │  │
+ │   │  • 3x 8b/10b TMDS Encoders (encode.v)                    ├─────►│  • Carve Rumble   │  │
+ │   │  • 10:1 DDR Serializer (serdes_10_to_1.v @ 125 MHz)      │      │  • Splash Impact  │  │
+ │   └────────────────────────────┬─────────────────────────────┘      └─────────┬─────────┘  │
+ └────────────────────────────────┼──────────────────────────────────────────────┼────────────┘
+                                  ▼                                              ▼
+                        HDMI Port (640x480@60)                            Audio 3.5mm Jack
+</pre>
+
+<h3>3. List of Features</h3>
+
+<h4>i. Baseline Features (Required for Core Working Functionality)</h4>
+<ol>
+  <li><strong>Pipelined Fixed-Point 3D Raymarcher:</strong> Hardware sphere-tracing core executing at 100–125 MHz, evaluating fixed-point Q8.8 distance arithmetic.</li>
+  <li><strong>Procedural Infinite Terrain &amp; Caverns:</strong> Real-time evaluation of wavy terrain and 3D Gyroid cavern equations (<code>sin(x)cos(y) + sin(y)cos(z) + sin(z)cos(x) = 0</code>) directly in logic with 0 bytes of RAM.</li>
+  <li><strong>Four Native Geometric Primitives:</strong>
+    <ul>
+      <li><em>Sphere:</em> Organic boulders, craters, and smooth excavation blobs.</li>
+      <li><em>Sharp Box:</em> Inigo Quilez exact box formula for crisp architectural doorways, flat walking floors, and steps.</li>
+      <li><em>Capsule (Swept Sphere):</em> Continuous cylindrical tunnel boring between 3D vectors.</li>
+      <li><em>Torus:</em> Architectural arches, circular rings, and floating portals.</li>
+    </ul>
+  </li>
+  <li><strong>Three Native Surface Texture Modifiers (Post-Ops):</strong>
+    <ul>
+      <li><em>Rock Craggle Noise:</em> High-frequency surface displacement simulating rough, blasted volcanic rock.</li>
+      <li><em>Excavator Ribbing:</em> Concentric circular periodic ridges mimicking Tunnel Boring Machine (TBM) cutter marks.</li>
+      <li><em>Rounding / Bevel (d' = d - r):</em> Softens sharp edges into smooth river stones or puffy clay.</li>
+    </ul>
+  </li>
+  <li><strong>HDMI Video Display (640x480 @ 60 Hz):</strong> Verified scanout using the provided RealDigital <code>hdmi_tx</code> IP paired with our custom video timing generator and a 2x pixel-doubling scanout path.</li>
+  <li><strong>USB 6-DOF Camera Navigation:</strong> First-person camera control (WASD walking, mouse look) driven by MicroBlaze via the Lab 7 MAX3421E USB Host controller.</li>
+  <li><strong>Interactive CSG Carving with Smart Merging:</strong> Real-time boolean subtraction (<code>smax(d_scene, -d_tool)</code>) allowing the player to carve tunnels on mouse click. MicroBlaze dynamically merges overlapping spheres to preserve primitive capacity.</li>
+  <li><strong>Lighting Engine with Crevice Ambient Occlusion (AO):</strong> 4-tap tetrahedral normal estimator, Lambertian diffuse, Blinn-Phong specular highlights, and 1-tap forward AO probe darkening cave crevices.</li>
+</ol>
+
+<h4>ii. Additional Features (Extra Difficulty &amp; Modular Extensions)</h4>
+<ol>
+  <li><strong>Interactive Liquid Simulation (PBD Fluid + <code>smin</code> Metaballs):</strong> 8 dynamic fluid droplets simulated in MicroBlaze and rendered in hardware with smooth-minimum surface tension to simulate flowing, pooling water (with an optional toggle for glowing emissive molten lava).</li>
+  <li><strong>Domain Space Warping Operators (Pre-Ops):</strong>
+    <ul>
+      <li><em>Arc Bend:</em> Coordinate warp along circular arcs to bore curved 90° and 180° U-turn tunnels.</li>
+      <li><em>Taper:</em> Linear axis scaling creating conical drill shafts, stalactites, and pyramids.</li>
+      <li><em>Twist:</em> Corkscrew coordinate warping creating Archimedes screw tunnels and spiral spires.</li>
+      <li><em>Shear / Skew:</em> Horizontal coordinate shift creating clean 45° walking ramps and slopes.</li>
+    </ul>
+  </li>
+  <li><strong>Interactive "Undo" Functionality:</strong> MicroBlaze maintains an edit history stack; pressing an Undo key (<code>Z</code>) pops the last dynamic edit and instantly restores the terrain geometry.</li>
+  <li><strong>3D Spatial Acceleration Bins (32x32x16):</strong> Coarse BRAM spatial hash table allowing scaling up to 2,048 simultaneous edits across a massive 128m x 128m x 64m world.</li>
+  <li><strong>Holographic Tool Reticle &amp; On-Screen Display:</strong> Native resolution crosshair, FPS counter, and a 3D wireframe preview showing where the carving tool will hit before clicking.</li>
+  <li><strong>Hardware PWM Audio:</strong> Procedural audio rumble when excavating rock and impact splash sounds when fluid hits terrain.</li>
+  <li><strong>Dual-Core 60 FPS Scaling (Modular Stretch Goal):</strong> Instantiation of a second parallel raymarch core to double frame throughput if synthesis timing and DSP margins allow.</li>
+  <li><strong>720p Video Mode (Modular Stretch Goal):</strong> Optional 1280x720 video timing generator if the 371.25 MHz serialization clock passes timing closure.</li>
+</ol>
+
+<h3>4. Expected Difficulty and Justification</h3>
+<p>
+<strong>Baseline Difficulty:</strong> 12 – 13 / 15 &nbsp;|&nbsp; <strong>Final Expected Difficulty with Additional Features:</strong> 15 / 15
+</p>
+
+<h4>Technical Justification &amp; Compute Budget:</h4>
+<ol>
+  <li><strong>High-Throughput Fixed-Point Arithmetic:</strong> Unlike conventional polygon rasterization or Lab 7's text controller (which performs one font ROM lookup per pixel), raymarching evaluates non-linear vector equations iteratively. At 320x180 @ 60 FPS, the engine computes 3.45 M pixels/sec. With an average of 35 march steps per pixel, the hardware processes <strong>approx 120 million distance evaluations per second</strong>. Sustaining this across 4 distinct primitive types and surface modifiers without pipeline stalls requires deeply pipelined DSP multiplier stages and custom reciprocal square-root lookups.</li>
+  <li><strong>Elimination of SIMD Thread Divergence:</strong> On desktop GPUs, raymarching suffers severe warp stalls when neighboring rays branch between air and solid terrain. On the FPGA, our pipeline is fully deterministic and systolic: rays stream through fixed pipeline stages with zero thread-divergence stalls, fully exploiting FPGA architectural strengths over GPUs.</li>
+  <li><strong>Hardware/Software Heterogeneous Computing:</strong> The MicroBlaze handles dynamic kinematics, smart CSG compaction, undo history, and fluid particle physics, while the custom FPGA fabric acts as an instantaneous O(1) collision and surface normal coprocessor via the distance field.</li>
+  <li><strong>Dynamic Topology Without Meshes:</strong> Achieving real-time 3D solid carving, organic procedural gyroids, and fluid coalescing without polygonal mesh generation or frame stutter demonstrates advanced digital signal processing and graphics systems architecture.</li>
+</ol>
+
+<h4>Spartan-7 (<code>XC7S50-CSGA324-1</code>) Resource Budget Table:</h4>
+<table>
+  <thead>
+    <tr>
+      <th>Resource</th>
+      <th>Available on Chip</th>
+      <th>Estimated Baseline Usage</th>
+      <th>% Utilization</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>LUTs</strong></td>
+      <td>32,600</td>
+      <td>approx 16,000 – 19,000 (Ray Core + MicroBlaze + AXI)</td>
+      <td>~52%</td>
+      <td><span class="badge">SAFE</span></td>
+    </tr>
+    <tr>
+      <td><strong>DSPs (DSP48E1)</strong></td>
+      <td>120</td>
+      <td>approx 32 – 40 (Ray Gen + Primitives + Normals + AO)</td>
+      <td>~32%</td>
+      <td><span class="badge">SAFE</span> (Dual-core: ~60)</td>
+    </tr>
+    <tr>
+      <td><strong>BRAM (36Kb blocks)</strong></td>
+      <td>75 (337.5 KB)</td>
+      <td>26 blocks (Framebuffer 58KB + Primitives 8KB + CPU)</td>
+      <td>~35%</td>
+      <td><span class="badge">SAFE</span> (Bins: ~39 blks)</td>
+    </tr>
+    <tr>
+      <td><strong>Clock Domains</strong></td>
+      <td>MMCM / PLL</td>
+      <td>100–125 MHz (Raymarch) / 25.175 MHz (HDMI)</td>
+      <td>N/A</td>
+      <td><span class="badge">TIMING SAFE</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>5. Proposed Timeline</h3>
+<ul>
+  <li><strong>Week 1 (Nov 9 – Nov 15): Video Path &amp; Core Raymarch Sim</strong>
+    <ul>
+      <li><em>Days 1–2:</em> Set up the provided RealDigital <code>hdmi_tx</code> IP with our custom video timing generator; verify stable 640x480 @ 60 Hz color bars on the monitor.</li>
+      <li><em>Days 3–5:</em> Write and simulate the fixed-point Ray Generator, Gyroid terrain ALU, 4 geometric primitives (Sphere, Box, Capsule, Torus), and surface modifiers in Vivado/ModelSim; stream static 3D test patterns to the monitor with Crevice AO.</li>
+    </ul>
+  </li>
+  <li><strong>Week 2 (Nov 16 – Nov 20): Interactive Integration [MID-PROJECT CHECKPOINT]</strong>
+    <ul>
+      <li><em>Software:</em> Integrate MAX3421E USB mouse and keyboard drivers on MicroBlaze; stream camera matrix over AXI-Lite.</li>
+      <li><em>Hardware:* Connect raymarch core to video buffer; implement real-time CSG carving across all 4 primitives and smart sphere merging.</li>
+      <li><strong>Mid-Checkpoint Deliverable (Nov 20):</strong> Working live demo showing a 3D scene on an HDMI monitor where the user walks/looks with USB controls and carves flat-floored rooms (sharp box) and tunnels (capsule) out of geometry in real time.</li>
+    </ul>
+  </li>
+  <li><strong>Fall Break (Nov 21 – Nov 29): Space Warps, Undo Stack &amp; Tools</strong>
+    <ul>
+      <li>Expand primitive buffer to 64 slots with bounding-box early exit and Undo stack.</li>
+      <li>Implement space warps (Arc Bend, Taper, Twist, Shear).</li>
+    </ul>
+  </li>
+  <li><strong>Week 3 (Nov 30 – Dec 6): Fluid Simulation &amp; Visual Overlays</strong>
+    <ul>
+      <li><em>Physics:</em> Implement MicroBlaze 8-droplet PBD fluid loop; wire droplet coordinates to hardware <code>smin</code> metaball blending (water/lava toggle).</li>
+      <li><em>Graphics:</em> Add holographic tool preview outline and hardware FPS counter font ROM.</li>
+      <li><em>Advanced:</em> Test 3D spatial bin grid integration and clock scaling (100 vs 125 MHz).</li>
+    </ul>
+  </li>
+  <li><strong>Week 4 (Dec 7 – Dec 11): Audio, Polish &amp; Showcase Demo</strong>
+    <ul>
+      <li>Connect PWM audio synthesizer for excavation rumble and fluid splashes.</li>
+      <li>Timing closure verification, system stability testing, and final project demo on <strong>Dec 11</strong>.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>6. Fallback &amp; Scaling Ladder ("If It Slips, We Demo This")</h3>
+<ol>
+  <li><strong>If Fluid Simulation is Unstable:</strong> Drop fluid particle attraction and demo <strong>rigid bouncing physics spheres</strong> (simple elastic reflection off grad d).</li>
+  <li><strong>If Complex Space Warps Timing Fails:</strong> Disable Twist/Shear and fall back strictly to the <strong>baseline 4 primitives (Sphere, Box, Capsule, Torus)</strong>.</li>
+  <li><strong>If Frame Rate Drops on Complex Scenes:</strong> Adjust top-level parameters: drop render resolution from 320x240 to 320x180, or cap raymarch steps to 28.</li>
+  <li><strong>If 720p Serialization Fails Timing:</strong> Maintain the verified baseline of <strong>640x480 @ 60 Hz</strong> using the provided RealDigital IP.</li>
+</ol>
+
+<h3>7. References &amp; Prior Art</h3>
+<ol>
+  <li><strong>TinyGPUs (Silice Hardware Graphics):</strong> S. Lefebvre, <em>"TinyGPUs: A collection of small GPUs for FPGAs,"</em> <a href="https://github.com/sylefeb/tinygpus">github.com/sylefeb/tinygpus</a>. <em>(Course-recommended hardware graphics reference).</em></li>
+  <li><strong>Dynamic Signed Distance Fields in Game Engines:</strong> M. Turitzin, <em>"I'm making a game engine based on dynamic signed distance fields (SDFs),"</em> 2023. <a href="https://youtu.be/il-TXbn5iMA">youtube.com/watch?v=il-TXbn5iMA</a>. <em>(Core visual and architectural inspiration).</em></li>
+  <li><strong>Signed Distance Field Modeling &amp; Raymarching:</strong> I. Quilez, <em>"Distance Functions and Raymarching Techniques,"</em> <a href="https://iquilezles.org/articles/distfunctions">iquilezles.org/articles/distfunctions</a>. <em>(Canonical reference for exact box, capsule, and smooth boolean algebra).</em></li>
+  <li><strong>RealDigital Urbana Reference Design:</strong> RealDigital Inc., <em>"HDMI Transmitter IP &amp; Urbana Board Technical Documentation,"</em> <a href="https://realdigital.org">realdigital.org</a>. <em>(Hardware IP for DVI 8b/10b and 10:1 DDR serialization).</em></li>
+  <li><strong>Position-Based Dynamics:</strong> M. Müller et al., <em>"Position Based Dynamics,"</em> Journal of Virtual Reality and Broadcasting, 2007. <em>(Foundational reference for lightweight, unconditionally stable particle-based fluid solvers).</em></li>
+  <li><strong>ECE 385 Laboratory Reference (Lab 7 SoC &amp; USB):</strong> University of Illinois Urbana-Champaign, <em>"Lab 7: MicroBlaze SoC with USB Host &amp; Video Display,"</em> 2026. <em>(Platform reference for MAX3421E USB SPI driver and AXI-Lite memory mapping).</em></li>
+</ol>
+
+</body>
+</html>
