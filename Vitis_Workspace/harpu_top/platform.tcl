@@ -19,3 +19,10 @@ platform active {harpu_top}
 platform generate -quick
 platform clean
 platform generate
+platform active {harpu_top}
+platform config -updatehw {F:/ECE_385_Final_Project/Final_Project/harpu_top.xsa}
+platform clean
+platform generate
+platform config -updatehw {F:/ECE_385_Final_Project/Final_Project/harpu_top.xsa}
+platform clean
+platform generate

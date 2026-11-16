@@ -43,20 +43,20 @@
 - [x] Create simple color-bar / keyboard-reactive test-pattern top-level module (`harpu_top.sv`).
 - [x] Map differential TMDS clock/data pins and USB/UART/Hex displays in `mb_harpu.xdc`.
 - [x] Synthesize, program bitstream, and verify rock-solid video output and keycode handling on physical hardware.
-- [ ] Implement $2\times$ pixel upscaler / frame buffer BRAM integration ($320 \times 240 \to 640 \times 480$).
+- [x] Implement $2\times$ pixel upscaler / frame buffer BRAM integration ($320 \times 240 \to 640 \times 480$) — verified glitch-free on hardware.
 
 ---
 
-### Step 3: Raymarch RTL Architecture in Simulation (Days 3–4 Target)
-- [ ] Implement fixed-point ray direction generator ($(u,v) \to \vec{r}_d$ in $Q8.8$).
-- [ ] Implement core distance ALUs in SystemVerilog:
-  - [ ] Sphere SDF: $\|\vec{p} - \vec{c}\| - r$
-  - [ ] Sharp Box SDF: Inigo Quilez exact box logic
-  - [ ] Procedural Gyroid ALU: $\sin(x)\cos(y) + \sin(y)\cos(z) + \sin(z)\cos(x)$
-- [ ] Implement sphere-tracing step FSM / pipeline ($t \leftarrow t + d$).
-- [ ] Implement 4-tap tetrahedral normal estimator ($\nabla d$).
-- [ ] Implement Blinn-Phong diffuse/specular lighting + 1-tap Crevice Ambient Occlusion.
-- [ ] Verify raymarcher output in ModelSim / Vivado testbench against reference images.
+### Step 3: Raymarch Pipeline & 3D Hardware Bring-Up
+- [x] Implement fixed-point ray direction generator ($(u,v) \to \vec{r}_d$ in $Q8.8$) — verified with `ray_gen_tb.sv` in simulation (<0.8% error).
+- [x] Implement non-restoring fixed-point square root core (`math_sqrt.sv`) — verified bit-accurate.
+- [x] Implement Sphere SDF ALU (`sdf_sphere.sv`): $\|\vec{p} - \vec{c}\| - r$ — verified in hardware.
+- [x] Implement sphere-tracing step FSM / pipeline (`raymarch_core.sv`): verified on hardware.
+- [x] Implement Blinn-Phong specular & Lambertian diffuse lighting engine (`sphere_shader.sv`): verified on hardware.
+- [x] Live hardware milestone: Render real-time 3D shaded sphere onto monitor via on-chip BRAM framebuffer ($320 \times 240 \to 640 \times 480$).
+- [ ] Implement Dynamic CSG Carving ALU: $d_{\text{carved}} = \max(d_{\text{sphere}}, -d_{\text{carve}})$.
+- [ ] Implement Finite-Difference Surface Normal Engine ($\nabla d$) in `raymarch_core.sv`.
+- [ ] Connect MicroBlaze USB mouse registers to CSG carve inputs for real-time interactive carving.
 
 ---
 

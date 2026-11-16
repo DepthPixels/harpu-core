@@ -58,20 +58,20 @@
     <Option Name="IPUserFilesDir" Val="$PIPUSERFILESDIR"/>
     <Option Name="IPStaticSourceDir" Val="$PIPUSERFILESDIR/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
-    <Option Name="WTXSimLaunchSim" Val="0"/>
+    <Option Name="WTXSimLaunchSim" Val="2"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="4"/>
-    <Option Name="WTModelSimExportSim" Val="4"/>
-    <Option Name="WTQuestaExportSim" Val="4"/>
+    <Option Name="WTXSimExportSim" Val="6"/>
+    <Option Name="WTModelSimExportSim" Val="6"/>
+    <Option Name="WTQuestaExportSim" Val="6"/>
     <Option Name="WTIesExportSim" Val="0"/>
-    <Option Name="WTVcsExportSim" Val="4"/>
-    <Option Name="WTRivieraExportSim" Val="4"/>
-    <Option Name="WTActivehdlExportSim" Val="4"/>
+    <Option Name="WTVcsExportSim" Val="6"/>
+    <Option Name="WTRivieraExportSim" Val="6"/>
+    <Option Name="WTActivehdlExportSim" Val="6"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -95,56 +95,56 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_clk_wiz_1_0/mb_harpu_clk_wiz_1_0.xci">
-          <Proxy FileSetName="mb_harpu_clk_wiz_1_0"/>
-        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_axi_gpio_0_1/mb_harpu_axi_gpio_0_1.xci">
           <Proxy FileSetName="mb_harpu_axi_gpio_0_1"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_microblaze_0_0/mb_harpu_microblaze_0_0.xci">
-          <Proxy FileSetName="mb_harpu_microblaze_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_dlmb_v10_0/mb_harpu_dlmb_v10_0.xci">
-          <Proxy FileSetName="mb_harpu_dlmb_v10_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_dlmb_bram_if_cntlr_0/mb_harpu_dlmb_bram_if_cntlr_0.xci">
-          <Proxy FileSetName="mb_harpu_dlmb_bram_if_cntlr_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_xbar_0/mb_harpu_xbar_0.xci">
-          <Proxy FileSetName="mb_harpu_xbar_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_mdm_1_0/mb_harpu_mdm_1_0.xci">
-          <Proxy FileSetName="mb_harpu_mdm_1_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_axi_quad_spi_0_0/mb_harpu_axi_quad_spi_0_0.xci">
-          <Proxy FileSetName="mb_harpu_axi_quad_spi_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_rst_clk_wiz_1_100M_0/mb_harpu_rst_clk_wiz_1_100M_0.xci">
-          <Proxy FileSetName="mb_harpu_rst_clk_wiz_1_100M_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_axi_timer_0_0/mb_harpu_axi_timer_0_0.xci">
-          <Proxy FileSetName="mb_harpu_axi_timer_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_axi_gpio_0_0/mb_harpu_axi_gpio_0_0.xci">
-          <Proxy FileSetName="mb_harpu_axi_gpio_0_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_ilmb_bram_if_cntlr_0/mb_harpu_ilmb_bram_if_cntlr_0.xci">
-          <Proxy FileSetName="mb_harpu_ilmb_bram_if_cntlr_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_ilmb_v10_0/mb_harpu_ilmb_v10_0.xci">
-          <Proxy FileSetName="mb_harpu_ilmb_v10_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_lmb_bram_0/mb_harpu_lmb_bram_0.xci">
-          <Proxy FileSetName="mb_harpu_lmb_bram_0"/>
-        </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_microblaze_0_axi_intc_0/mb_harpu_microblaze_0_axi_intc_0.xci">
-          <Proxy FileSetName="mb_harpu_microblaze_0_axi_intc_0"/>
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_axi_uartlite_0_0/mb_harpu_axi_uartlite_0_0.xci">
           <Proxy FileSetName="mb_harpu_axi_uartlite_0_0"/>
         </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_rst_clk_wiz_1_100M_0/mb_harpu_rst_clk_wiz_1_100M_0.xci">
+          <Proxy FileSetName="mb_harpu_rst_clk_wiz_1_100M_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_mdm_1_0/mb_harpu_mdm_1_0.xci">
+          <Proxy FileSetName="mb_harpu_mdm_1_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_xbar_0/mb_harpu_xbar_0.xci">
+          <Proxy FileSetName="mb_harpu_xbar_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_microblaze_0_axi_intc_0/mb_harpu_microblaze_0_axi_intc_0.xci">
+          <Proxy FileSetName="mb_harpu_microblaze_0_axi_intc_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_axi_timer_0_0/mb_harpu_axi_timer_0_0.xci">
+          <Proxy FileSetName="mb_harpu_axi_timer_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_clk_wiz_1_0/mb_harpu_clk_wiz_1_0.xci">
+          <Proxy FileSetName="mb_harpu_clk_wiz_1_0"/>
+        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_axi_gpio_0_2/mb_harpu_axi_gpio_0_2.xci">
           <Proxy FileSetName="mb_harpu_axi_gpio_0_2"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_axi_quad_spi_0_0/mb_harpu_axi_quad_spi_0_0.xci">
+          <Proxy FileSetName="mb_harpu_axi_quad_spi_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_axi_gpio_0_0/mb_harpu_axi_gpio_0_0.xci">
+          <Proxy FileSetName="mb_harpu_axi_gpio_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_ilmb_v10_0/mb_harpu_ilmb_v10_0.xci">
+          <Proxy FileSetName="mb_harpu_ilmb_v10_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_dlmb_bram_if_cntlr_0/mb_harpu_dlmb_bram_if_cntlr_0.xci">
+          <Proxy FileSetName="mb_harpu_dlmb_bram_if_cntlr_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_ilmb_bram_if_cntlr_0/mb_harpu_ilmb_bram_if_cntlr_0.xci">
+          <Proxy FileSetName="mb_harpu_ilmb_bram_if_cntlr_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_lmb_bram_0/mb_harpu_lmb_bram_0.xci">
+          <Proxy FileSetName="mb_harpu_lmb_bram_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_dlmb_v10_0/mb_harpu_dlmb_v10_0.xci">
+          <Proxy FileSetName="mb_harpu_dlmb_v10_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="mb_harpu.bd" FileRelPathName="ip/mb_harpu_microblaze_0_0/mb_harpu_microblaze_0_0.xci">
+          <Proxy FileSetName="mb_harpu_microblaze_0_0"/>
         </CompFileExtendedInfo>
       </File>
       <File Path="$PSRCDIR/sources_1/imports/design_source/VGA_controller.sv">
@@ -174,8 +174,81 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PSRCDIR/sources_1/new/lut_inv_sqrt.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/math_sqrt.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/memory.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/ray_gen.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/raymarch_core.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/sdf_scene.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/sphere_shader.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PSRCDIR/sources_1/new/harpu_top.sv">
         <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/fb_test_writer.sv">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/ray_gen_tb.sv">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/carve_controller.sv">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -185,6 +258,7 @@
         <Option Name="DesignMode" Val="RTL"/>
         <Option Name="TopModule" Val="harpu_top"/>
         <Option Name="TopAutoSet" Val="TRUE"/>
+        <Option Name="dataflowViewerSettings" Val="min_width=16"/>
       </Config>
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1" RelGenDir="$PGENDIR/constrs_1">
@@ -205,9 +279,8 @@
       <Filter Type="Srcs"/>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
-        <Option Name="TopModule" Val="harpu_top"/>
+        <Option Name="TopModule" Val="ray_gen_tb"/>
         <Option Name="TopLib" Val="xil_defaultlib"/>
-        <Option Name="TopAutoSet" Val="TRUE"/>
         <Option Name="TransportPathDelay" Val="0"/>
         <Option Name="TransportIntDelay" Val="0"/>
         <Option Name="SelectedSimModel" Val="rtl"/>
@@ -216,10 +289,19 @@
         <Option Name="PamSignalDriverFile" Val="xil_bypass_driver"/>
         <Option Name="PamPseudoTop" Val="pseudo_tb"/>
         <Option Name="SrcSet" Val="sources_1"/>
+        <Option Name="xsim.simulate.runtime" Val="all"/>
       </Config>
     </FileSet>
     <FileSet Name="utils_1" Type="Utils" RelSrcDir="$PSRCDIR/utils_1" RelGenDir="$PGENDIR/utils_1">
       <Filter Type="Utils"/>
+      <File Path="$PSRCDIR/utils_1/imports/synth_1/harpu_top.dcp">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedInSteps" Val="synth_1"/>
+          <Attr Name="AutoDcp" Val="1"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="TopAutoSet" Val="TRUE"/>
       </Config>
@@ -352,17 +434,16 @@
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
-    <FileSet Name="blk_mem_vram" Type="BlockSrcs" RelSrcDir="$PSRCDIR/blk_mem_vram" RelGenDir="$PGENDIR/blk_mem_vram">
-      <File Path="$PSRCDIR/sources_1/ip/blk_mem_vram/blk_mem_vram.xci">
+    <FileSet Name="blk_mem_framebuffer" Type="BlockSrcs" RelSrcDir="$PSRCDIR/blk_mem_framebuffer" RelGenDir="$PGENDIR/blk_mem_framebuffer">
+      <File Path="$PSRCDIR/sources_1/ip/blk_mem_framebuffer/blk_mem_framebuffer.xci">
         <FileInfo>
-          <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
       <Config>
-        <Option Name="TopModule" Val="blk_mem_vram"/>
+        <Option Name="TopModule" Val="blk_mem_framebuffer"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
@@ -386,7 +467,7 @@
     </Simulator>
   </Simulators>
   <Runs Version="1" Minor="19">
-    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7s50csga324-1" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="true" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1">
+    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7s50csga324-1" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="true" IncrementalCheckpoint="$PSRCDIR/utils_1/imports/synth_1/harpu_top.dcp" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
@@ -586,11 +667,9 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="blk_mem_vram_synth_1" Type="Ft3:Synth" SrcSet="blk_mem_vram" Part="xc7s50csga324-1" ConstrsSet="blk_mem_vram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/blk_mem_vram_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/blk_mem_vram_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/blk_mem_vram_synth_1">
+    <Run Id="blk_mem_framebuffer_synth_1" Type="Ft3:Synth" SrcSet="blk_mem_framebuffer" Part="xc7s50csga324-1" ConstrsSet="blk_mem_framebuffer" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/blk_mem_framebuffer_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/blk_mem_framebuffer_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/blk_mem_framebuffer_synth_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -939,11 +1018,9 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="blk_mem_vram_impl_1" Type="Ft2:EntireDesign" Part="xc7s50csga324-1" ConstrsSet="blk_mem_vram" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="blk_mem_vram_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/blk_mem_vram_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/blk_mem_vram_impl_1">
+    <Run Id="blk_mem_framebuffer_impl_1" Type="Ft2:EntireDesign" Part="xc7s50csga324-1" ConstrsSet="blk_mem_framebuffer" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="blk_mem_framebuffer_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/blk_mem_framebuffer_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/blk_mem_framebuffer_impl_1">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>

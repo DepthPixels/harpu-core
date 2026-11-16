@@ -7,75 +7,95 @@ This file maintains an ongoing record of file changes, terminal commands execute
 ## Session: 2026-11-08 to 2026-11-10 (Project Inception & Week 1 Setup)
 
 ### Summary of Actions
-* Evaluated initial project proposal against Urbana board hardware specs (`XC7S50-CSGA324-1`) and ECE 385 grading rubric.
-* Converted project architecture to an implicit 3D SDF raymarcher with dynamic CSG carving, 8-droplet PBD fluid simulation, and procedural Gyroid caverns.
-* Parameterized internal resolution ($320 \times 180$ / $320 \times 240$ upscaled to $640 \times 480$ @ 60 Hz) to guarantee locked 60 FPS timing within BRAM budget.
-* Formatted, verified, and exported official project proposal documents (`.md`, `.html`, `.pdf`).
-* Organized project directory structure (`Documentation/`, `Documentation/AI_Documentation/`).
-* Initialized local Git repository on branch `main`, verified `.gitignore` against Vivado and Vitis build paths, and linked remote to `https://github.com/DepthPixels/harpu-core.git`.
-* Codified agent guidelines (`agent_rules.md`) and Week 1 progress tracking (`agents_week_1.md`).
+* **[AGENT]** Evaluated initial project proposal against Urbana board hardware specs (`XC7S50-CSGA324-1`) and ECE 385 grading rubric.
+* **[AGENT]** Converted project architecture to an implicit 3D SDF raymarcher with dynamic CSG carving, 8-droplet PBD fluid simulation, and procedural Gyroid caverns.
+* **[AGENT]** Parameterized internal resolution ($320 \times 180$ / $320 \times 240$ upscaled to $640 \times 480$ @ 60 Hz) to guarantee locked 60 FPS timing within BRAM budget.
+* **[AGENT]** Formatted, verified, and exported official project proposal documents (`.md`, `.html`, `.pdf`).
+* **[AGENT]** Organized project directory structure (`Documentation/`, `Documentation/AI_Documentation/`).
+* **[AGENT]** Initialized local Git repository on branch `main`, verified `.gitignore` against Vivado and Vitis build paths, and linked remote to `https://github.com/DepthPixels/harpu-core.git`.
+* **[AGENT]** Codified agent guidelines (`agent_rules.md`) and Week 1 progress tracking (`agents_week_1.md`).
 
 ### Files Created / Modified
-* `Documentation/ECE385_Final_Project_Proposal.md` — Complete ECE 385 project proposal.
-* `Documentation/ECE385_Final_Project_Proposal.html` — Print-styled HTML proposal.
-* `Documentation/ECE385_Final_Project_Proposal.pdf` — Compiled PDF proposal.
-* `.gitignore` — Tailored ignore rules for Vivado (`.cache`, `.hw`, `.sim`, `.runs`) and Vitis (`.metadata`, `Debug/`, `Release/`).
-* `Documentation/agent_rules.md` — AI agent rules (planning/debugging only, no unsolicited code, mandatory audit logging).
-* `Documentation/agents_week_1.md` — Week 1 progress keeping and milestone checklist.
-* `Documentation/AI_Documentation/session_log.md` — Initial audit log.
-
-### Key Terminal Commands Run
-```powershell
-# Directory setup and file relocation
-New-Item -ItemType Directory -Force 'F:\ECE 385 Final Project\Documentation'
-Move-Item -Force 'F:\ECE 385 Final Project\ECE385_Final_Project_Proposal.*' 'F:\ECE 385 Final Project\Documentation\'
-
-# Edge headless PDF compilation
-& 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' --headless --disable-gpu --no-sandbox --user-data-dir='F:\ECE 385 Final Project\.tmp_edge' --print-to-pdf='F:\ECE 385 Final Project\ECE385_Final_Project_Proposal.pdf' 'F:\ECE 385 Final Project\ECE385_Final_Project_Proposal.html'
-
-# Git initialization & configuration
-git init -b main
-git config user.name 'pdeswal2'
-git config user.email 'pdeswal2@illinois.edu'
-git remote set-url origin https://github.com/DepthPixels/harpu-core.git
-```
-
-### Architectural Decisions & Debugging Notes
-* **Resolution Budgeting:** Confirmed that native 720p raymarching requires $>500\text{ M}$ evaluations/sec, exceeding dual-core Spartan-7 limits. Internal buffer of $320 \times 240$ with $2\times$ hardware pixel doubling safely fits 60 FPS ($\approx 184\text{ M}$ evaluations/sec) and takes only $76.8\text{ KB}$ of BRAM.
-* **Primitive Struct Sizing:** Corrected block diagram primitive descriptor from 64-bit to 128-bit to accommodate Capsule endpoints ($A, B$) and Sharp Box extents in fixed-point $Q8.8$.
-* **Video Pipeline De-risking:** Standardized on verified RealDigital `hdmi_tx` IP (`encode.v` + `serdes_10_to_1.v`) at $640 \times 480$ @ 60 Hz to ensure video stability for the Nov 20 mid-checkpoint.
+* **[AGENT]** `Documentation/ECE385_Final_Project_Proposal.md` — Complete ECE 385 project proposal.
+* **[AGENT]** `Documentation/ECE385_Final_Project_Proposal.html` — Print-styled HTML proposal.
+* **[AGENT]** `Documentation/ECE385_Final_Project_Proposal.pdf` — Compiled PDF proposal.
+* **[AGENT]** `.gitignore` — Tailored ignore rules for Vivado and Vitis.
+* **[AGENT]** `Documentation/agent_rules.md` — AI agent rules.
+* **[AGENT]** `Documentation/agents_week_1.md` — Week 1 progress keeping and milestone checklist.
+* **[AGENT]** `Documentation/AI_Documentation/session_log.md` — Initial audit log.
 
 ---
 
 ## Session: 2026-11-10 (MicroBlaze Block Design & Video Path Audit)
 
 ### Summary of Actions
-* Inspected Vivado project source tree (`Final_Project/Final_Project.srcs`), constraints (`mb_harpu.xdc`), and block design (`mb_harpu.bd`).
-* Cross-referenced BD architecture and peripheral parameters with ECE 385 USB documentation (`IUSB.pdf`).
-* Audited top-level HDL wrapper (`harpu_top.sv`), `color_mapper.sv`, `VGA_controller.sv`, and IP configurations (`clk_wiz_0`, `hdmi_tx_0`).
+* **[USER]** Assembled baseline MicroBlaze Block Design (`mb_harpu.bd`) with MAX3421E SPI, AXI Timer, UART, and GPIO.
+* **[USER]** Added Urbana board constraints (`mb_harpu.xdc`) and imported lab 6 wrapper files (`harpu_top.sv`, `color_mapper.sv`, `VGA_controller.sv`, `hex_driver.sv`).
+* **[AGENT]** Inspected Vivado project source tree, constraints, and block design.
+* **[AGENT]** Cross-referenced BD architecture and peripheral parameters with ECE 385 USB documentation (`IUSB.pdf`).
+* **[AGENT]** Audited top-level HDL wrapper (`harpu_top.sv`), `color_mapper.sv`, `VGA_controller.sv`, and IP configurations (`clk_wiz_0`, `hdmi_tx_0`).
 
 ### Bugs & Architectural Findings Identified
-1. **`color_mapper.sv` Latch & Undefined State:**
-   * Missing default assignment in `always_comb`. When `keycode` is not `0x16`, `0x04`, or `0x07` (e.g., reset/idle state `0x00`), `color` is unassigned, producing `X` in simulation and inferring 12 latches in synthesis.
-2. **Block Design Peripheral Naming Mismatch (`mb_harpu.bd`):**
-   * AXI Timer instance is named `axi_timer_0` (expected `timer_usb_axi` per lab manual).
-   * AXI Quad SPI instance is named `axi_quad_spi_0` (expected `spi_usb` per lab manual).
-   * Note: Causes `xparameters.h` symbol mismatch in Vitis if using stock ECE 385 Lab 6 C headers (`XPAR_TIMER_USB_AXI_DEVICE_ID`, `XPAR_SPI_USB_DEVICE_ID`).
-3. **Simulation Testbench Absence:**
-   * No simulation testbench exists in `sim_1`. Simulating `harpu_top` directly leaves inputs floating (`Z`), and simulating the uninitialized MicroBlaze core in behavioral simulation adds huge overhead without an ELF. Recommended to create a lightweight testbench driving clock, reset, and keycode inputs.
+1. **[AGENT] `color_mapper.sv` Latch & Undefined State:** Missing default assignment in `always_comb`, inferring 12 latches and causing undefined state in simulation.
+2. **[AGENT] Block Design Peripheral Naming Mismatch:** `axi_timer_0` vs `timer_usb_axi` and `axi_quad_spi_0` vs `spi_usb` noted for Vitis `xparameters.h` compatibility.
+3. **[AGENT] Simulation Testbench Absence:** Identified lack of testbench in `sim_1`.
 
 ---
 
-## Session: 2026-11-15 (Hardware Verification Milestone & Step 3 Roadmap)
+## Session: 2026-11-15 to 2026-11-16 (Hardware Verification & Step 3 Implementation)
 
 ### Summary of Actions
-* Confirmed physical FPGA hardware test verified working on Urbana board:
-  * RealDigital `hdmi_tx` IP operating with $640 \times 480$ @ 60 Hz timing ($25\text{ MHz}$ pixel clock, $125\text{ MHz}$ TMDS clock).
-  * MicroBlaze processor executing USB HID keyboard polling via MAX3421E SPI interface.
-  * Real-time color mapper changing monitor output based on keyboard inputs.
-  * 7-segment hex displays showing active keycodes.
-* Created NTFS directory junction `F:\ECE 385 Final Project` $\to$ `F:\ECE_385_Final_Project` to ensure toolchain compatibility without space characters.
-* Updated milestone progress in `Documentation/agents_week_1.md`.
-* Defined next development phase for **Friday, Nov 20 Mid-Project Checkpoint**.
-
-
+* **[USER]** Successfully synthesized, implemented, and programmed Urbana board bitstream:
+  * Verified rock-solid $640 \times 480$ @ 60 Hz HDMI output on physical monitor.
+  * Verified MicroBlaze USB keyboard input via MAX3421E SPI and real-time color changes on keypress.
+* **[USER]** Created BRAM framebuffer IP (`blk_mem_framebuffer`) with depth 76,800 and 12-bit RGB444 width.
+* **[AGENT]** Created directory junction `F:\ECE 385 Final Project` $\to$ `F:\ECE_385_Final_Project` for toolchain compatibility.
+* **[AGENT]** Audited `memory.sv`, `color_mapper.sv`, and `harpu_top.sv`. Identified port direction errors on `dout_b`, address width truncation, and clock domain crossing.
+* **[AGENT]** Rewrote `memory.sv` (with 17-bit addresses, 12-bit data, output `dout_b`, and separate 100MHz write / 25MHz read clocks).
+* **[AGENT]** Created `fb_test_writer.sv` with a 4-quadrant test pattern and updated `color_mapper.sv` to implement $2\times$ upscaling.
+* **[USER]** Verified framebuffer test on physical monitor; observed vertical glitch streaks in Quadrant 2 color bars.
+* **[AGENT]** Diagnosed setup timing violation at 100 MHz caused by combinational `/ 20` non-power-of-2 divider and unregistered write bus.
+* **[AGENT]** Rewrote `fb_test_writer.sv` using a 0..19 sub-counter and fully registered output pipeline.
+* **[USER]** Re-programmed board; verified 100% glitch-free, razor-sharp 4-quadrant framebuffer display.
+* **[USER]** Reported resource utilization: LUT 8.78%, FF 4.06%, BRAM 56.67%, DSP 2.50%.
+* **[AGENT]** Designed 5-stage pipelined architecture for Stage 1 (`ray_gen.sv`).
+* **[USER]** Implemented `ray_gen.sv`.
+* **[AGENT]** Generated 64-entry $Q0.16$ inverse square root ROM (`lut_inv_sqrt.sv`) and automated self-checking testbench (`ray_gen_tb.sv`).
+* **[AGENT]** Diagnosed 16-bit intermediate expression truncation bug under IEEE 1800-2017 shift rules causing all tests to report `dz = 0xFFFF`.
+* **[USER]** Applied 32-bit intermediate product casts in `ray_gen.sv`.
+* **[USER]** Reran behavioral simulation: **All 7 automated unit-norm tests PASSED** with $<0.8\%$ error.
+* **[USER]** Implemented non-restoring square root core (`math_sqrt.sv`) and sphere distance ALU (`sdf_sphere.sv`).
+* **[AGENT]** Mathematically verified bit-accuracy of `math_sqrt.sv` in Python simulation (100% exact roots).
+* **[USER]** Created initial FSM in `raymarch_core.sv` and skeleton for `sphere_shader.sv`.
+* **[AGENT]** Audited `raymarch_core.sv` and `sphere_shader.sv`:
+  * Identified that `render_x` and `render_y` were incrementing on every clock cycle instead of only inside `SHADE`.
+  * Identified typo `dot` instead of `dot_product` and operator precedence bug `diffuse << 3 + diffuse << 2` in `sphere_shader.sv`.
+  * Identified unused `.clk, .reset` ports in `sphere_shader_inst`.
+* **[USER]** Fixed `raymarch_core.sv`: moved `render_x`/`render_y` increment into `SHADE`, removed `shaded_output` multi-driver assignment, and removed unused `.clk`/`.reset` from `sphere_shader_inst`.
+* **[USER]** Fixed `sphere_shader.sv` (`dot_product` name & shift operator parentheses) and updated `raymarch_core.sv` (startup `ray_in_valid <= 1'b1;` and merged `CHECK_STEP` distance evaluation).
+* **[USER]** Integrated `raymarch_core` into `harpu_top.sv`, synthesized, implemented, and programmed Urbana board bitstream.
+* **[USER]** Successfully rendered first real-time 3D raymarched sphere on physical HDMI monitor with Lambertian diffuse shading!
+* **[AGENT]** Analyzed display photo (`media_1794814484428_3201f710.jpg`):
+  * Verified 3D lighting, depth, and sphere curvature functioning on hardware.
+  * Explained pixelation as natural $2\times$ upscaling from $320 \times 240$ BRAM framebuffer.
+  * Diagnosed horizontal elongation as 16:9 monitor stretch on a 4:3 ($640 \times 480$) video signal.
+  * Diagnosed silhouette unevenness as grazing-ray step count limits (24 max steps).
+* **[USER]** Fixed `sphere_shader.sv`: added diffuse clamp for `dot_product >= 16'sh0100` and implemented 5-bit `r_sum, g_sum, b_sum` saturation adders.
+* **[USER]** Tested Stage 2.5A bitstream on monitor: observed bright white specular highlight, but noted a weird green band near the highlight and secondary brightness spots (e.g., at dead center).
+* **[AGENT]** Diagnosed root causes:
+  1. Green Band: In `sphere_shader.sv`, `dot_product[7:4]` equals 15 in the band $[0x00F0, 0x00FF]$. `r_base = ambient + diffuse = 1 + 15 = 16` overflows the 4-bit `r_base` to 0, completely dropping the red channel and leaving pure green `{0, 3, 0}`.
+  2. Dead-Center Brightness: Blinn-Phong exponent of 8 is too broad; at dead center where the normal faces the camera, $(\vec{N} \cdot \vec{H})^8 = (0.901)^8 \approx 42\%$, causing a 6/15 white haze. Stepping to exponent 32 drops dead-center specular to zero and focuses the glint into a single sharp highlight.
+* **[USER]** Tested updated `sphere_shader.sv`: verified green banding is gone, but noted specular shape is irregular/jagged and diffuse highlight area saturates into a solid blocky red patch.
+* **[AGENT]** Diagnosed root causes:
+  1. Blocky Red Patch: Red was permitted to saturate to 15 from diffuse alone ($1 + 14 = 15$), causing a massive flat region of identical color `{F, 3, 0}` across the top cap. Scaled diffuse red to peak at 12 so smooth color gradients are preserved, reserving 13-15 for the white specular glint.
+  2. Jagged Specular Shape: Power-32 exponent ($s_{32}$) hyper-amplifies subtle $1\%$ raymarch step endpoint tolerances ($|\vec{p}| \in [1.000, 1.019]$) into $50\%$ brightness cliffs. Replaced with power-16 plus threshold subtraction ($s_{16} - 64$), which completely cuts out dead-center haze while restoring a smooth, circular specular highlight.
+* **[USER]** Reminded agent to adhere strictly to the "No Large Code Dumps" rule in `agent_rules.md`.
+* **[USER]** Updated `sphere_shader.sv` with power-16 specular shift logic and proportional diffuse multipliers.
+* **[USER]** Applied `(diffuse == 4'd15) ? 4'd15 : (ambient + diffuse);` in `sphere_shader.sv`.
+* **[USER]** Confirmed bitstream on monitor: green band is 100% eliminated, smooth natural gradient restored, and specular highlight verified.
+* **[USER]** Selected Option A: Proceeding to implement Dynamic CSG Carving ALU (`sdf_scene.sv`).
+* **[USER]** Selected Option 1: Implement interactive keyboard-driven carving controller first before porting to USB mouse.
+* **[AGENT]** Designed `carve_controller` architecture:
+  * 60 Hz rate-limited position accumulator driven by USB keycodes from `keycode0_gpio[7:0]`.
+  * Controls: WASD for $(x_c, y_c)$ translation across the 3D sphere, I/K for penetration depth $z_c$, and Spacebar for real-time carving activation (`carve_en`).
+  * Structured output bus `[carve_x, carve_y, carve_z, carve_radius, carve_en]` to enable seamless 1:1 plug-in replacement when the USB mouse driver is integrated.

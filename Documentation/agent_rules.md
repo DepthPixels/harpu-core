@@ -29,8 +29,9 @@ To maintain academic integrity and build a comprehensive audit trail for the ECE
    * **Files Changed / Created:** Exact relative file paths.
    * **Terminal Commands Executed:** The command string, exit code, and brief purpose.
    * **Debugging Log:** Root causes identified, synthesis/timing errors diagnosed, simulation mismatches caught, and their resolutions.
-3. **Log Format:**
+3. **Log Format & Author Differentiation:**
    * Append entries to `Documentation/AI_Documentation/session_log.md` with timestamps and brief bullet points.
+   * **Explicit Attribution:** Every logged task, file change, diagnostic step, or test must explicitly state who performed it using clear tags: **`[USER]`** or **`[AGENT]`** (e.g., `* [USER] Implemented ray_gen.sv`, `* [AGENT] Diagnosed 16-bit intermediate truncation in math expressions`).
 
 ---
 
