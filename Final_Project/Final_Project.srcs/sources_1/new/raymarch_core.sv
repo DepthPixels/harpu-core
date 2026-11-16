@@ -6,16 +6,27 @@ module raymarch_core (
 
     input  logic [9:0]  drawX,
     input  logic [9:0]  drawY,
+    input  logic        carve_en,
+    input  logic signed [15:0] carve_x,
+    input  logic signed [15:0] carve_y,
+    input  logic signed [15:0] carve_z,
+    input  logic signed [15:0] carve_radius,
+    input  logic signed [15:0] inv_carve_radius,
     
     output logic [16:0] fb_addr,
     output logic [11:0] fb_din,
-    output logic        fb_we
+    output logic        fb_we,
+
+    output logic        frame_done
 );
 
-    typedef enum logic [1:0] {
+    typedef enum logic [2:0] {
         INIT,
         UPDATE_P,
         CHECK_STEP,
+        NORM_X,
+        NORM_Y,
+        NORM_Z,
         SHADE
     } raymarch_fsm_t;
 
@@ -42,11 +53,20 @@ module raymarch_core (
     logic signed [15:0] ray_t;
     logic signed [15:0] ray_t_min = 16'sh0100;
     logic signed [15:0] ray_t_max = 16'sh0600;
+    logic signed [15:0] norm_x, norm_y, norm_z;
+    logic signed [15:0] norm_sphere_x, norm_sphere_y, norm_sphere_z;
+    logic signed [15:0] norm_carve_x, norm_carve_y, norm_carve_z;
     logic signed [15:0] step_cnt;
     logic               hit;
+    logic               hit_carve;
+    logic               is_carve_reg;
+
+    logic        [8:0]  blend_w;
+    logic        [8:0]  blend_w_reg;
 
     logic        [11:0] shaded_output;
-    
+
+    assign frame_done = (render_x == 9'd319) && (render_y == 8'd239) && (raymarch_state == SHADE);
 
     always_ff @(posedge clk or posedge reset) begin: RAYMARCH_FSM
         if (reset) begin
@@ -84,10 +104,13 @@ module raymarch_core (
                 end
 
                 CHECK_STEP: begin
+                    sdf_in_valid <= 1'b0;
                     if (sdf_valid) begin
                         if (sdf_dist < 16'sh0005) begin
                             raymarch_state <= SHADE;
                             hit <= 1'b1;
+                            is_carve_reg <= hit_carve;
+                            blend_w_reg <= blend_w;
                         end
                         else if (ray_t > ray_t_max || step_cnt > 16'sd24) begin
                             raymarch_state <= SHADE;
@@ -99,7 +122,6 @@ module raymarch_core (
                             step_cnt <= step_cnt + 16'sd1;
                         end
                     end
-                    sdf_in_valid <= 1'b0;
                 end
                 SHADE: begin
                     raymarch_state <= INIT;
@@ -133,7 +155,18 @@ module raymarch_core (
         end
     end
 
+    always_comb begin
+        norm_sphere_x = pos_x;
+        norm_sphere_y = pos_y;
+        norm_sphere_z = pos_z;
+        norm_carve_x = 16'((32'(carve_x - pos_x) * 32'(inv_carve_radius)) >>> 8);
+        norm_carve_y = 16'((32'(carve_y - pos_y) * 32'(inv_carve_radius)) >>> 8);
+        norm_carve_z = 16'((32'(carve_z - pos_z) * 32'(inv_carve_radius)) >>> 8);
 
+        norm_x = 16'((32'(norm_sphere_x) * (256 - blend_w_reg) + 32'(norm_carve_x) * blend_w_reg) >>> 8);
+        norm_y = 16'((32'(norm_sphere_y) * (256 - blend_w_reg) + 32'(norm_carve_y) * blend_w_reg) >>> 8);
+        norm_z = 16'((32'(norm_sphere_z) * (256 - blend_w_reg) + 32'(norm_carve_z) * blend_w_reg) >>> 8);
+    end
 
     ray_gen ray_gen_inst (
         .clk(clk),
@@ -153,20 +186,22 @@ module raymarch_core (
         .pos_x(pos_x),
         .pos_y(pos_y),
         .pos_z(pos_z),
-        .carve_en(1'b1),
-        .carve_x(16'sh005A),
-        .carve_y(16'sh005A),
-        .carve_z(16'shFF26),
-        .carve_radius(16'sh005A),
+        .carve_en(carve_en),
+        .carve_x(carve_x),
+        .carve_y(carve_y),
+        .carve_z(carve_z),
+        .carve_radius(carve_radius),
         .in_valid(sdf_in_valid),
         .dist_out(sdf_dist),
-        .out_valid(sdf_valid)
+        .out_valid(sdf_valid),
+        .hit_carve(hit_carve),
+        .blend_w(blend_w)
     );
 
     sphere_shader sphere_shader_inst (
-        .norm_x(pos_x),
-        .norm_y(pos_y),
-        .norm_z(pos_z),
+        .norm_x(norm_x),
+        .norm_y(norm_y),
+        .norm_z(norm_z),
         .shaded_output(shaded_output)
     );
 

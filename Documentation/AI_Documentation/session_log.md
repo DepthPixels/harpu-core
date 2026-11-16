@@ -94,8 +94,33 @@ This file maintains an ongoing record of file changes, terminal commands execute
 * **[USER]** Applied `(diffuse == 4'd15) ? 4'd15 : (ambient + diffuse);` in `sphere_shader.sv`.
 * **[USER]** Confirmed bitstream on monitor: green band is 100% eliminated, smooth natural gradient restored, and specular highlight verified.
 * **[USER]** Selected Option A: Proceeding to implement Dynamic CSG Carving ALU (`sdf_scene.sv`).
-* **[USER]** Selected Option 1: Implement interactive keyboard-driven carving controller first before porting to USB mouse.
-* **[AGENT]** Designed `carve_controller` architecture:
-  * 60 Hz rate-limited position accumulator driven by USB keycodes from `keycode0_gpio[7:0]`.
-  * Controls: WASD for $(x_c, y_c)$ translation across the 3D sphere, I/K for penetration depth $z_c$, and Spacebar for real-time carving activation (`carve_en`).
-  * Structured output bus `[carve_x, carve_y, carve_z, carve_radius, carve_en]` to enable seamless 1:1 plug-in replacement when the USB mouse driver is integrated.
+* **[USER]** Corrected `carve_controller.sv`: added missing comma, fixed port bit-widths to signed 16-bit, mapped USB HID scancodes, corrected WASD axes, and added `tick_dly` edge detector.
+* **[USER]** Confirmed tearing fix and requested Stage 2.5B: Finite-Difference Normal Engine.
+* **[USER]** Implemented Analytical CSG Normal logic: added `hit_carve` output in `sdf_scene.sv`, simplified `raymarch_core.sv` FSM back to 4 states (`INIT`, `UPDATE_P`, `CHECK_STEP`, `SHADE`), and added closed-form normal vector calculation.
+* **[AGENT]** Audited `sdf_scene.sv` and `raymarch_core.sv`:
+  1. Caught syntax error in `sdf_scene.sv`: missing comma after `out_valid` on line 19.
+  2. Caught 1-cycle pipeline sampling race on `hit_carve`: `hit_carve` is combinationally derived from square root outputs that expire when `sdf_valid` drops; recommended registering `is_carve_reg <= hit_carve` inside `CHECK_STEP` when `sdf_valid` is high so `always_comb` normal evaluation in `SHADE` reads stable hit identity.
+  3. Verified closed-form concave normal arithmetic: $(\vec{c}_B - \vec{p}) \times 2.85$ correctly generates inward-facing unit normals for the carved bowl.
+* **[USER]** Fixed comma in `sdf_scene.sv` and implemented `is_carve_reg` latching in `raymarch_core.sv`.
+* **[AGENT]** Verified full Analytical CSG Normal pipeline:
+  * `hit_carve` is cleanly registered into `is_carve_reg` on hit detection while `sdf_valid` is high.
+  * Inward bowl normals and outward sphere normals are 100% stable during `SHADE`.
+  * Ready for synthesis, bitstream generation, and hardware verification on Urbana board.
+
+* **[USER]** Tested bitstream on hardware (`media_1794827857702_df2a48f6.jpg`): verified 100% of glitter noise is gone and 11 FPS is solid, but identified:
+  1. Specular highlight in carved hole persists even on the dark/unlit side of the sphere.
+  2. Specular highlight intensity and size explodes as hole radius expands.
+  3. Borders of the crater are high contrast / dark.
+* **[AGENT]** Diagnosed root causes:
+  1. Specular Dark-Side Bleed: `sphere_shader.sv` evaluated specular solely on `half_dot_product[15] == 0` without gating on diffuse illumination (`dot_product > 0`), causing concave crater surfaces facing the camera to reflect specular even when completely self-shadowed.
+  2. Hole Radius Expansion: In `raymarch_core.sv`, the crater normal was scaled by hardcoded constant `16'sh02DA` ($1/0.35$). As radius expanded to $0.66$, normal length reached $1.90$, blowing up $(\vec{N} \cdot \vec{H})^8$ by $170\times$ and saturating the crater into a giant white spot.
+  3. High Contrast Borders: Crater overhang slopes downward ($N_y < 0$), falling into shadow under overhead light ($L_y = +0.60$); low ambient (`4'd1`) produced pitch black juxtaposed against saturated white specular.
+* **[USER]** Requested Option B: 256-entry reciprocal lookup table for `inv_carve_radius` and confirmed edits to `sphere_shader.sv`, `raymarch_core.sv`, and `harpu_top.sv`.
+* **[AGENT]** Audited `sphere_shader.sv`, `raymarch_core.sv`, and `harpu_top.sv`:
+  * Verified `sphere_shader.sv` gates specular with `if (dot_product > 0 && half_dot_product[15] == 0)`.
+  * Verified `raymarch_core.sv` scales crater normal dynamically by `inv_carve_radius`.
+  * Verified `harpu_top.sv` interconnects `inv_carve_radius` across `carve_controller` and `raymarch_core`.
+* **[AGENT]** Updated `carve_controller.sv` with Option B:
+  * Implemented 256-entry $Q8.8$ reciprocal lookup table (`inv_rom[0:255]`) precomputed as $65536 / R$.
+  * Added safety clamping on radius controls: $R \in [16\text{'sh001A}, 16\text{'sh00DA}]$ ($0.10$ to $0.85$).
+  * Added registered `inv_carve_radius` output clocked at 100 MHz, eliminating division logic and ensuring zero timing delay during raymarching.

@@ -21,10 +21,11 @@ module sphere_shader (
 
     logic        [3:0]  diffuse;
     logic        [3:0]  intensity;
-    logic        [3:0]  ambient = 4'd1;
+    logic        [3:0]  ambient = 4'd3;
     logic        [3:0]  specular;
 
     logic        [3:0]  r_base, g_base, b_base;
+    logic        [4:0]  r_add;
     logic        [4:0]  r_sum, g_sum, b_sum;
     logic        [3:0]  red, green, blue;
 
@@ -45,12 +46,18 @@ module sphere_shader (
             s4 = 16'sh0000;
             s8 = 16'sh0000;
         end
-        specular = (s8 >= 16'sh0100) ? 4'd15 : s8[7:4];
+        if (dot_product > 0 && half_dot_product[15] == 0) begin
+            specular = (s8 >= 16'sh0100) ? 4'd15 : s8[7:4];
+        end
+        else begin
+            specular = 4'd0;
+        end
 
         diffuse = (dot_product >= 16'sh0100) ? 4'd15 : ((dot_product > 0) ? dot_product[7:4] : 4'd0);
         intensity = ambient + (((diffuse << 3) + (diffuse << 2)) >> 4);
 
-        r_base = (diffuse == 4'd15) ? 4'd15 : (ambient + diffuse);
+        r_add  = 5'(ambient) + 5'(diffuse);
+        r_base = (r_add > 5'd15) ? 4'd15 : r_add[3:0];
         g_base = diffuse >> 2;
         b_base = 4'd0;
 

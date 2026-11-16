@@ -16,7 +16,9 @@ module sdf_scene(
     input  logic signed [15:0] carve_radius,
 
     output logic signed [15:0] dist_out,
-    output logic               out_valid
+    output logic               out_valid,
+    output logic               hit_carve,
+    output logic        [8:0]  blend_w
 );
 
     // Represents a 1 radius sphere at (0, 0, 0)
@@ -38,6 +40,21 @@ module sdf_scene(
     logic signed [15:0] carve_sqrt_sq_D;
     logic signed [15:0] dist_carve;
     logic               out_valid_carve;
+
+    logic signed [15:0] d_diff;
+    assign d_diff = (-dist_carve) - dist_sphere;
+
+    assign hit_carve = (-dist_carve >= dist_sphere) && carve_en;
+
+    always_comb begin
+        if (!carve_en || d_diff <= -16'sh0010) begin
+            blend_w = 9'd0;    // Pure sphere
+        end else if (d_diff >= 16'sh0030) begin
+            blend_w = 9'd256;  // Pure crater
+        end else begin
+            blend_w = 9'((32'(d_diff + 16'sh0010)) << 2);
+        end
+    end
 
     always_comb begin: SDF_SPHERE
         diff_x = pos_x - center_x;

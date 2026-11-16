@@ -53,10 +53,16 @@ module harpu_top (
     logic        fb_ena_b;
     logic [11:0] fb_dout_b;
 
+    // Carving Control Signals
+    logic        carve_en;
+    logic signed [15:0] carve_x, carve_y, carve_z;
+    logic signed [15:0] carve_radius;
+    logic signed [15:0] inv_carve_radius;
+
     hex_driver HexA (
         .clk(Clk),
         .reset(reset_ah),
-        .in({keycode0_gpio[31:28], keycode0_gpio[27:24], keycode0_gpio[23:20], keycode0_gpio[19:16]}),
+        .in({4'h0, 4'h0, fps_display[7:4], fps_display[3:0]}),
         .hex_seg(hex_segA),
         .hex_grid(hex_gridA)
     );
@@ -64,7 +70,7 @@ module harpu_top (
     hex_driver HexB (
         .clk(Clk),
         .reset(reset_ah),
-        .in({keycode0_gpio[15:12], keycode0_gpio[11:8], keycode0_gpio[7:4], keycode0_gpio[3:0]}),
+        .in({carve_x[7:4], carve_x[3:0], keycode0_gpio[7:4], keycode0_gpio[3:0]}),
         .hex_seg(hex_segB),
         .hex_grid(hex_gridB)
     );
@@ -104,14 +110,59 @@ module harpu_top (
 
     assign fb_ena_a = 1'b1;
 
+    logic [26:0] second_counter;
+    always_ff @(posedge Clk or posedge reset_ah) begin
+        if (reset_ah) begin
+            second_counter <= 27'd0;
+        end else if (second_counter == 27'd99999999) begin
+            second_counter <= 27'd0;
+        end else begin
+            second_counter <= second_counter + 27'd1;
+        end
+    end
+
+    logic [7:0] frame_counter;
+    logic [7:0] fps_display;
+    logic       frame_done;
+    always_ff @(posedge Clk or posedge reset_ah) begin
+        if (reset_ah) begin
+            frame_counter <= 8'd0;
+        end else if (second_counter == 27'd99999999) begin
+            fps_display <= frame_counter;
+            frame_counter <= 8'd0;
+        end else if (frame_done) begin
+            frame_counter <= frame_counter + 8'd1;
+        end
+    end
+
     raymarch_core raymarch_inst (
         .clk(Clk),
         .reset(reset_ah),
         .drawX(drawX),
         .drawY(drawY),
+        .carve_en(carve_en),
+        .carve_x(carve_x),
+        .carve_y(carve_y),
+        .carve_z(carve_z),
+        .carve_radius(carve_radius),
         .fb_addr(fb_addr_a),
         .fb_din(fb_din_a),
-        .fb_we(fb_wea_a)
+        .fb_we(fb_wea_a),
+        .frame_done(frame_done),
+        .inv_carve_radius(inv_carve_radius)
+    );
+
+    carve_controller carve_controller_inst (
+        .clk(Clk),
+        .reset(reset_ah),
+        .frame_tick(frame_done),
+        .keycode(keycode0_gpio[7:0]),
+        .carve_x(carve_x),
+        .carve_y(carve_y),
+        .carve_z(carve_z),
+        .carve_radius(carve_radius),
+        .carve_en(carve_en),
+        .inv_carve_radius(inv_carve_radius)
     );
 
     framebuffer_memory fb_mem_inst (
