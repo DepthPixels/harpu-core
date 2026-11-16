@@ -14,6 +14,7 @@ module sdf_scene(
     input  logic signed [15:0] carve_y,
     input  logic signed [15:0] carve_z,
     input  logic signed [15:0] carve_radius,
+    input  logic signed [15:0] inv_carve_radius,
 
     output logic signed [15:0] dist_out,
     output logic               out_valid,
@@ -42,17 +43,19 @@ module sdf_scene(
     logic               out_valid_carve;
 
     logic signed [15:0] d_diff;
+    logic signed [15:0] d_rel;
     assign d_diff = (-dist_carve) - dist_sphere;
+    assign d_rel = 16'((32'(d_diff) * 32'(inv_carve_radius)) >>> 8);
 
     assign hit_carve = (-dist_carve >= dist_sphere) && carve_en;
 
     always_comb begin
-        if (!carve_en || d_diff <= -16'sh0010) begin
-            blend_w = 9'd0;    // Pure sphere
-        end else if (d_diff >= 16'sh0030) begin
-            blend_w = 9'd256;  // Pure crater
+        if (!carve_en || d_rel[15] == 1'b1) begin
+            blend_w = 9'd0;    // Pure sphere (outside hole)
+        end else if (d_rel >= 16'sh0080) begin
+            blend_w = 9'd256;  // Pure crater interior
         end else begin
-            blend_w = 9'((32'(d_diff + 16'sh0010)) << 2);
+            blend_w = 9'((32'(d_rel)) << 1); // Gentle, smooth bleed into bevel
         end
     end
 

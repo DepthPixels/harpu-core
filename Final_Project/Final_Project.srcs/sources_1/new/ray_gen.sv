@@ -110,6 +110,8 @@ module ray_gen (
     // Stage 4 of pipeline: Vector Magnitude
 
     // Lookup table output unsigned Q0.16
+    logic [15:0] lut_outa;
+    logic [15:0] lut_outa_next;
     logic [15:0] lut_out;
     logic [5:0]  lut_addr;
     logic signed [15:0] r4_dx, r4_dy, r4_dz;
@@ -117,14 +119,22 @@ module ray_gen (
 
     logic        r4_valid;
 
+    assign lut_out = lut_outa - 16'(((32'(lut_outa - lut_outa_next) * 32'({12'd0, r3_S[3:0]})) >> 4));
+
     always_comb begin: INVERSE_SQRT_CALC
-        lut_addr = (r3_S - 16'd576) >> 4;
+        if (r3_S <= 16'sd576)
+            lut_addr = 6'd0;
+        else if (r3_S >= 16'sd1584)
+            lut_addr = 6'd63;
+        else
+            lut_addr = 6'((r3_S - 16'sd576) >> 4);
     end
 
     lut_inv_sqrt inv_sqrt_lut (
         .clka(clk),
         .addra(lut_addr),
-        .douta(lut_out)
+        .douta(lut_outa),
+        .douta_next(lut_outa_next)
     );
 
     always_ff @(posedge clk or posedge reset) begin: INVERSE_SQRT_REGS

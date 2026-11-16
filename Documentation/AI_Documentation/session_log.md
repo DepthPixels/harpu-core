@@ -124,3 +124,14 @@ This file maintains an ongoing record of file changes, terminal commands execute
   * Implemented 256-entry $Q8.8$ reciprocal lookup table (`inv_rom[0:255]`) precomputed as $65536 / R$.
   * Added safety clamping on radius controls: $R \in [16\text{'sh001A}, 16\text{'sh00DA}]$ ($0.10$ to $0.85$).
   * Added registered `inv_carve_radius` output clocked at 100 MHz, eliminating division logic and ensuring zero timing delay during raymarching.
+
+### Session Log Update (2026-11-16: Verification & Bevel/LUT Distortion Fixes)
+* **[USER]**: Noticed circular distortion seam at screen center and problematic bevel lighting when carve moved closer or embedded inside sphere. Instructed verification of changes and implementation of `inv_lut` interpolation.
+* **[AGENT]**: 
+  * Verified and implemented linear interpolation in `lut_inv_sqrt.sv` and `ray_gen.sv` across entries using fractional bits `r3_S[3:0]`, completely eliminating the discrete concentric circular distortion seam.
+  * Corrected `lutouta_next` naming and fixed missing parenthesis syntax error in `ray_gen.sv`.
+  * Verified `sdf_scene.sv` crater rim blend: removed the discontinuous 64-count jump at $d_{\text{rel}} = 0$ by aligning `blend_w` to ramp continuously from 0 at $d_{\text{rel}} = 0$ to 256 at $d_{\text{rel}} = 16'sh0040$.
+  * Fixed bevel normal cancellation in `raymarch_core.sv`: when cutter is embedded deeper than the surface ($c_z > p_z$), enforced forward-facing $Z$ on the bevel transition (`blend_carve_z = -norm_carve_z`) to prevent destructive cancellation with $\vec{n}_{\text{sphere}}$ and eliminate dark rim artifacts.
+  * Cast `carve_y` and `carve_z` to `(int16_t)` in `sim/sim_main.cpp` for accurate negative coordinate reporting in SDL2 window title.
+  * **[USER]**: Inquired whether restoring color bleeding into the bevel for shallow carves (more outside than inside) is more accurate due to lower slope gradient.
+  * **[AGENT]**: Confirmed physical and visual accuracy of gentle bleed. Widened the crater transition zone in `sdf_scene.sv` from $d_{\text{rel}} \in [0, 64]$ to $[0, 128]$ (`blend_w = d_rel << 1`), allowing the bright sphere lighting and specular highlight to roll smoothly into shallow dents while preserving clean boundaries on embedded cuts with zero hardware DSP overhead.

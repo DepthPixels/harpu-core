@@ -1,7 +1,7 @@
 # Verilator + SDL2 Makefile for HARPU 3D Raymarching Simulator
 
 VERILATOR = verilator
-VERILATOR_FLAGS = -cc --exe -O3 --x-assign fast --x-initial fast --noassert -Wall -Wno-fatal -Wno-WIDTH -Wno-CASEINCOMPLETE
+VERILATOR_FLAGS = -cc --exe -O3 --x-assign fast --x-initial fast --noassert --no-timing -Wall -Wno-fatal -Wno-WIDTH -Wno-CASEINCOMPLETE
 
 # Hardware Sources Directory
 HDL_DIR = ../Final_Project/Final_Project.srcs/sources_1/new
@@ -27,7 +27,7 @@ SDL_CFLAGS := $(shell sdl2-config --cflags 2>/dev/null || pkg-config --cflags sd
 SDL_LIBS   := $(shell sdl2-config --libs 2>/dev/null || pkg-config --libs sdl2 2>/dev/null || echo $(MSYS_LIBS))
 
 # Pass C++ compiler flags into Verilator
-CXXFLAGS = -O3 -march=native -std=c++17 $(SDL_CFLAGS)
+CXXFLAGS = -O3 -march=native -fno-stack-protector -fomit-frame-pointer -std=c++17 $(SDL_CFLAGS)
 LDFLAGS  = $(SDL_LIBS)
 
 .PHONY: all run clean
@@ -40,7 +40,7 @@ obj_dir/Vsim_top: $(SRCS) $(CPP_SRC)
 		-LDFLAGS "$(LDFLAGS)" \
 		--top-module sim_top \
 		$(SRCS) $(CPP_SRC)
-	$(MAKE) -j -C obj_dir -f Vsim_top.mk OPT_FAST="-O3 -march=native" Vsim_top
+	$(MAKE) -j -C obj_dir -f Vsim_top.mk OPT_FAST="-O3 -march=native -fno-stack-protector -fomit-frame-pointer" Vsim_top
 
 run: all
 	./obj_dir/Vsim_top

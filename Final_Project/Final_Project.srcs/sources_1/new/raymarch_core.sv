@@ -155,6 +155,8 @@ module raymarch_core (
         end
     end
 
+    logic signed [15:0] blend_carve_z;
+
     always_comb begin
         norm_sphere_x = pos_x;
         norm_sphere_y = pos_y;
@@ -163,9 +165,11 @@ module raymarch_core (
         norm_carve_y = 16'((32'(carve_y - pos_y) * 32'(inv_carve_radius)) >>> 8);
         norm_carve_z = 16'((32'(carve_z - pos_z) * 32'(inv_carve_radius)) >>> 8);
 
+        blend_carve_z = (norm_carve_z > 0 && blend_w_reg < 9'd256) ? -norm_carve_z : norm_carve_z;
+
         norm_x = 16'((32'(norm_sphere_x) * (256 - blend_w_reg) + 32'(norm_carve_x) * blend_w_reg) >>> 8);
         norm_y = 16'((32'(norm_sphere_y) * (256 - blend_w_reg) + 32'(norm_carve_y) * blend_w_reg) >>> 8);
-        norm_z = 16'((32'(norm_sphere_z) * (256 - blend_w_reg) + 32'(norm_carve_z) * blend_w_reg) >>> 8);
+        norm_z = 16'((32'(norm_sphere_z) * (256 - blend_w_reg) + 32'(blend_carve_z) * blend_w_reg) >>> 8);
     end
 
     ray_gen ray_gen_inst (
@@ -191,6 +195,7 @@ module raymarch_core (
         .carve_y(carve_y),
         .carve_z(carve_z),
         .carve_radius(carve_radius),
+        .inv_carve_radius(inv_carve_radius),
         .in_valid(sdf_in_valid),
         .dist_out(sdf_dist),
         .out_valid(sdf_valid),

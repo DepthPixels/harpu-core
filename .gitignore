@@ -46,6 +46,10 @@ _ide/
 *.launch
 
 # Compiled objects, dependencies, and executables
+obj_dir/
+*/obj_dir/
+**/obj_dir/
+sim/obj_dir/
 Debug/
 Release/
 */Debug/

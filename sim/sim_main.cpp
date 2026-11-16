@@ -93,6 +93,7 @@ int main(int argc, char** argv) {
     std::cout << " OK." << std::endl;
 
     std::cout << "[3/4] Creating Renderer & Framebuffer Texture..." << std::flush;
+    SDL_SetHint(SDL_HINT_RENDER_VSYNC, "0"); // Disable VSync to prevent DWM/GPU throttling the simulation
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer) {
         renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
@@ -106,6 +107,18 @@ int main(int argc, char** argv) {
         FB_WIDTH, FB_HEIGHT
     );
     std::cout << " OK." << std::endl;
+
+    // Precompute 12-bit RGB (4:4:4) to 32-bit ARGB (8:8:8:8) lookup table
+    uint32_t color_lut[4096];
+    for (int i = 0; i < 4096; i++) {
+        uint8_t r = (i >> 8) & 0xF;
+        uint8_t g = (i >> 4) & 0xF;
+        uint8_t b = i & 0xF;
+        r = (r << 4) | r;
+        g = (g << 4) | g;
+        b = (b << 4) | b;
+        color_lut[i] = (0xFF << 24) | (r << 16) | (g << 8) | b;
+    }
 
     uint32_t fb_pixels[FB_WIDTH * FB_HEIGHT];
     for (int i = 0; i < FB_WIDTH * FB_HEIGHT; i++) {
@@ -138,68 +151,77 @@ int main(int argc, char** argv) {
     uint8_t current_keycode = KEY_NONE;
 
     auto last_fps_time = std::chrono::steady_clock::now();
+    auto last_render_time = std::chrono::steady_clock::now();
     int frames_rendered = 0;
     float current_fps = 0.0f;
+    const int BATCH_SIZE = 1024;
 
     while (running && !Verilated::gotFinish()) {
-        // Poll SDL Events every 4096 cycles (prevents stalling the OS event queue)
-        if ((main_time & 0x0FFF) == 0) {
-            SDL_Event event;
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
+        // Poll SDL Events once per batch (every 1024 clock cycles)
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = false;
+            } else if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE) {
                     running = false;
-                } else if (event.type == SDL_KEYDOWN) {
-                    if (event.key.keysym.sym == SDLK_ESCAPE) {
-                        running = false;
-                    } else {
-                        current_keycode = translate_sdl_key(event.key.keysym.sym);
-                    }
-                } else if (event.type == SDL_KEYUP) {
-                    if (translate_sdl_key(event.key.keysym.sym) == current_keycode) {
-                        current_keycode = KEY_NONE;
-                    }
+                } else {
+                    current_keycode = translate_sdl_key(event.key.keysym.sym);
+                }
+            } else if (event.type == SDL_KEYUP) {
+                if (translate_sdl_key(event.key.keysym.sym) == current_keycode) {
+                    current_keycode = KEY_NONE;
                 }
             }
         }
         top->keycode = current_keycode;
 
-        // Clock the Hardware
-        top->clk = 1;
-        top->eval();
-        main_time++;
+        bool frame_done_flag = false;
 
-        // Sample Framebuffer Write
-        if (top->fb_we) {
-            uint32_t addr = top->fb_addr;
-            if (addr < (uint32_t)(FB_WIDTH * FB_HEIGHT)) {
-                uint16_t din = top->fb_din;
-                uint8_t r = (din >> 8) & 0xF;
-                uint8_t g = (din >> 4) & 0xF;
-                uint8_t b = din & 0xF;
+        // Step hardware in tight batch to maximize CPU instruction cache and branch prediction
+        for (int step = 0; step < BATCH_SIZE; ++step) {
+            top->clk = 1;
+            top->eval();
 
-                // Expand 4-bit to 8-bit color
-                r = (r << 4) | r;
-                g = (g << 4) | g;
-                b = (b << 4) | b;
-
-                fb_pixels[addr] = (0xFF << 24) | (r << 16) | (g << 8) | b;
+            if (top->fb_we) {
+                uint32_t addr = top->fb_addr;
+                if (addr < (uint32_t)(FB_WIDTH * FB_HEIGHT)) {
+                    fb_pixels[addr] = color_lut[top->fb_din & 0x0FFF];
+                }
             }
+
+            if (top->frame_done) {
+                frame_done_flag = true;
+            }
+
+            top->clk = 0;
+            top->eval();
+        }
+        main_time += (BATCH_SIZE * 2);
+
+        auto now = std::chrono::steady_clock::now();
+
+        // Progressive scanline blit throttled to ~30 FPS (33ms) or immediate upon frame completion
+        if (frame_done_flag || (now - last_render_time) >= std::chrono::milliseconds(33)) {
+            last_render_time = now;
+            SDL_UpdateTexture(texture, NULL, fb_pixels, FB_WIDTH * sizeof(uint32_t));
+            SDL_RenderClear(renderer);
+            SDL_RenderCopy(renderer, texture, NULL, NULL);
+            SDL_RenderPresent(renderer);
         }
 
-        // Blit on Frame Done or every 2048 pixels (shows live progressive scanout)
-        if (top->frame_done) {
+        if (frame_done_flag) {
             frames_rendered++;
-            auto now = std::chrono::steady_clock::now();
             std::chrono::duration<float> elapsed = now - last_fps_time;
             if (elapsed.count() >= 0.5f) {
                 current_fps = frames_rendered / elapsed.count();
                 frames_rendered = 0;
                 last_fps_time = now;
 
-                float cx = (float)top->carve_x / 256.0f;
-                float cy = (float)top->carve_y / 256.0f;
-                float cz = (float)top->carve_z / 256.0f;
-                float cr = (float)top->carve_radius / 256.0f;
+                float cx = (float)(int16_t)top->carve_x / 256.0f;
+                float cy = (float)(int16_t)top->carve_y / 256.0f;
+                float cz = (float)(int16_t)top->carve_z / 256.0f;
+                float cr = (float)(int16_t)top->carve_radius / 256.0f;
 
                 char title[128];
                 snprintf(title, sizeof(title),
@@ -207,22 +229,7 @@ int main(int argc, char** argv) {
                     current_fps, cx, cy, cz, cr, top->carve_en ? "[ON]" : "[OFF]");
                 SDL_SetWindowTitle(window, title);
             }
-
-            SDL_UpdateTexture(texture, NULL, fb_pixels, FB_WIDTH * sizeof(uint32_t));
-            SDL_RenderClear(renderer);
-            SDL_RenderCopy(renderer, texture, NULL, NULL);
-            SDL_RenderPresent(renderer);
-        } else if (top->fb_we && ((top->fb_addr & 0x07FF) == 0)) {
-            // Progressive scanline update
-            SDL_UpdateTexture(texture, NULL, fb_pixels, FB_WIDTH * sizeof(uint32_t));
-            SDL_RenderClear(renderer);
-            SDL_RenderCopy(renderer, texture, NULL, NULL);
-            SDL_RenderPresent(renderer);
         }
-
-        top->clk = 0;
-        top->eval();
-        main_time++;
     }
 
     // Cleanup
