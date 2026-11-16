@@ -44,3 +44,38 @@ git remote set-url origin https://github.com/DepthPixels/harpu-core.git
 * **Resolution Budgeting:** Confirmed that native 720p raymarching requires $>500\text{ M}$ evaluations/sec, exceeding dual-core Spartan-7 limits. Internal buffer of $320 \times 240$ with $2\times$ hardware pixel doubling safely fits 60 FPS ($\approx 184\text{ M}$ evaluations/sec) and takes only $76.8\text{ KB}$ of BRAM.
 * **Primitive Struct Sizing:** Corrected block diagram primitive descriptor from 64-bit to 128-bit to accommodate Capsule endpoints ($A, B$) and Sharp Box extents in fixed-point $Q8.8$.
 * **Video Pipeline De-risking:** Standardized on verified RealDigital `hdmi_tx` IP (`encode.v` + `serdes_10_to_1.v`) at $640 \times 480$ @ 60 Hz to ensure video stability for the Nov 20 mid-checkpoint.
+
+---
+
+## Session: 2026-11-10 (MicroBlaze Block Design & Video Path Audit)
+
+### Summary of Actions
+* Inspected Vivado project source tree (`Final_Project/Final_Project.srcs`), constraints (`mb_harpu.xdc`), and block design (`mb_harpu.bd`).
+* Cross-referenced BD architecture and peripheral parameters with ECE 385 USB documentation (`IUSB.pdf`).
+* Audited top-level HDL wrapper (`harpu_top.sv`), `color_mapper.sv`, `VGA_controller.sv`, and IP configurations (`clk_wiz_0`, `hdmi_tx_0`).
+
+### Bugs & Architectural Findings Identified
+1. **`color_mapper.sv` Latch & Undefined State:**
+   * Missing default assignment in `always_comb`. When `keycode` is not `0x16`, `0x04`, or `0x07` (e.g., reset/idle state `0x00`), `color` is unassigned, producing `X` in simulation and inferring 12 latches in synthesis.
+2. **Block Design Peripheral Naming Mismatch (`mb_harpu.bd`):**
+   * AXI Timer instance is named `axi_timer_0` (expected `timer_usb_axi` per lab manual).
+   * AXI Quad SPI instance is named `axi_quad_spi_0` (expected `spi_usb` per lab manual).
+   * Note: Causes `xparameters.h` symbol mismatch in Vitis if using stock ECE 385 Lab 6 C headers (`XPAR_TIMER_USB_AXI_DEVICE_ID`, `XPAR_SPI_USB_DEVICE_ID`).
+3. **Simulation Testbench Absence:**
+   * No simulation testbench exists in `sim_1`. Simulating `harpu_top` directly leaves inputs floating (`Z`), and simulating the uninitialized MicroBlaze core in behavioral simulation adds huge overhead without an ELF. Recommended to create a lightweight testbench driving clock, reset, and keycode inputs.
+
+---
+
+## Session: 2026-11-15 (Hardware Verification Milestone & Step 3 Roadmap)
+
+### Summary of Actions
+* Confirmed physical FPGA hardware test verified working on Urbana board:
+  * RealDigital `hdmi_tx` IP operating with $640 \times 480$ @ 60 Hz timing ($25\text{ MHz}$ pixel clock, $125\text{ MHz}$ TMDS clock).
+  * MicroBlaze processor executing USB HID keyboard polling via MAX3421E SPI interface.
+  * Real-time color mapper changing monitor output based on keyboard inputs.
+  * 7-segment hex displays showing active keycodes.
+* Created NTFS directory junction `F:\ECE 385 Final Project` $\to$ `F:\ECE_385_Final_Project` to ensure toolchain compatibility without space characters.
+* Updated milestone progress in `Documentation/agents_week_1.md`.
+* Defined next development phase for **Friday, Nov 20 Mid-Project Checkpoint**.
+
+

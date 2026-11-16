@@ -38,12 +38,12 @@
 ---
 
 ### Step 2: Video Path Bring-Up (Days 1–2 Target)
-- [ ] Import RealDigital `hdmi_tx` IP (`encode.v`, `serdes_10_to_1.v`) into Vivado project.
-- [ ] Design custom `sync_generator.sv` for standard $640 \times 480$ @ 60 Hz timing ($25.175\text{ MHz}$ pixel clock).
-- [ ] Create simple color-bar / test-pattern top-level module.
-- [ ] Map differential TMDS clock/data pins in `urbana.xdc`.
-- [ ] Synthesize, program bitstream, and verify rock-solid video output on physical monitor.
-- [ ] Implement $2\times$ pixel upscaler / dual-line buffer ($320 \times 240 \to 640 \times 480$).
+- [x] Import RealDigital `hdmi_tx` IP (`encode.v`, `serdes_10_to_1.v`) into Vivado project.
+- [x] Integrate standard $640 \times 480$ @ 60 Hz VGA controller timing ($25\text{ MHz}$ pixel clock).
+- [x] Create simple color-bar / keyboard-reactive test-pattern top-level module (`harpu_top.sv`).
+- [x] Map differential TMDS clock/data pins and USB/UART/Hex displays in `mb_harpu.xdc`.
+- [x] Synthesize, program bitstream, and verify rock-solid video output and keycode handling on physical hardware.
+- [ ] Implement $2\times$ pixel upscaler / frame buffer BRAM integration ($320 \times 240 \to 640 \times 480$).
 
 ---
 
@@ -73,4 +73,7 @@
 ---
 
 ## 4. Current Workstream & Next Immediate Task
-* **Immediate Task:** Bring up the $640 \times 480$ @ 60 Hz video test pattern using the provided RealDigital `hdmi_tx` IP and verify stable sync on the monitor.
+* **Immediate Task:** Begin Step 3 (Raymarch RTL Architecture) & Step 2 completion ($2\times$ BRAM frame buffer scanout):
+  1. Set up $320 \times 240$ dual-port BRAM frame buffer with $2\times$ pixel duplication to display cleanly on the $640 \times 480$ monitor.
+  2. Implement the fixed-point $(u,v) \to \vec{r}_d$ ray generation unit in $Q8.8$.
+  3. Implement the sphere and box distance ALUs in SystemVerilog.
