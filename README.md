@@ -10,6 +10,12 @@
 
 Traditional raymarching algorithms for Signed Distance Fields (SDFs) are compute-heavy and typically executed on massive multi-threaded GPUs using pixel shaders. HARPU demonstrates that a custom, deeply pipelined silicon microarchitecture can compute, shade, and render real-time 3D procedural scenes at **164 FPS** directly on constrained FPGA fabric with **zero external memory** overhead.
 
+<p align="center">
+  <img src="docs/harpu_demo.gif" alt="HARPU Real-Time FPGA Raymarching Demo" width="650"/>
+  <br>
+  <em>Live hardware capture: Real-time procedural raymarching and dynamic CSG carving executed on AMD Spartan-7 FPGA outputting over HDMI (640x480 @ 60 Hz).</em>
+</p>
+
 ---
 
 ## Architecture Overview
