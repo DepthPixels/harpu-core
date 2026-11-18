@@ -3,8 +3,10 @@ module fixed_point_sqrt_q8_8 (
     input  logic        rst_n,
     input  logic        in_valid,
     input  logic [15:0] radicand,
+    input  logic [3:0]  tag_in,
     output logic [15:0] root,
-    output logic        out_valid
+    output logic        out_valid,
+    output logic [3:0]  tag_out
 );
 
     // Zero-pad Q8.8 to Q8.16 (24 bits) so sqrt yields Q4.8 (12 bits)
@@ -16,6 +18,7 @@ module fixed_point_sqrt_q8_8 (
     logic signed [25:0] rem_pipe   [0:11]; // 26-bit signed remainder
     logic [23:0]        x_pipe     [0:11];
     logic [11:0]        q_pipe     [0:11]; // 12-bit Q4.8 internal root
+    logic [3:0]         tag_pipe   [0:11];
 
     // Combinational next-stage signals
     logic signed [25:0] rem_shifted [0:11];
@@ -51,6 +54,7 @@ module fixed_point_sqrt_q8_8 (
         if (!rst_n) begin
             for (int i = 0; i < 12; i++) begin
                 valid_pipe[i] <= 1'b0;
+                tag_pipe[i]   <= 4'b0;
                 rem_pipe[i]   <= 26'sd0;
                 x_pipe[i]     <= 24'd0;
                 q_pipe[i]     <= 12'd0;
@@ -58,6 +62,7 @@ module fixed_point_sqrt_q8_8 (
         end else begin
             // Stage 0 register update
             valid_pipe[0] <= in_valid;
+            tag_pipe[0]   <= tag_in;
             rem_pipe[0]   <= rem_next[0];
             x_pipe[0]     <= {radicand_ext[21:0], 2'b00};
             q_pipe[0]     <= q_next[0];
@@ -65,6 +70,7 @@ module fixed_point_sqrt_q8_8 (
             // Stages 1 to 11 register updates
             for (int i = 1; i < 12; i++) begin
                 valid_pipe[i] <= valid_pipe[i-1];
+                tag_pipe[i]   <= tag_pipe[i-1];
                 rem_pipe[i]   <= rem_next[i];
                 x_pipe[i]     <= {x_pipe[i-1][21:0], 2'b00};
                 q_pipe[i]     <= q_next[i];
@@ -75,5 +81,6 @@ module fixed_point_sqrt_q8_8 (
     // Zero-extend 12-bit Q4.8 result to 16-bit Q8.8 output
     assign root      = {4'd0, q_pipe[11]};
     assign out_valid = valid_pipe[11];
+    assign tag_out   = tag_pipe[11];
 
 endmodule

@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <cstdint>
 #include <chrono>
+#include <algorithm>
 
 #if defined(__has_include)
   #if __has_include(<SDL2/SDL.h>)
@@ -62,13 +63,14 @@ int main(int argc, char** argv) {
 
     std::cout << "======================================================" << std::endl;
     std::cout << " HARPU 3D Raymarching Simulator (Verilator + SDL2)    " << std::endl;
-    std::cout << " Controls:                                            " << std::endl;
-    std::cout << "   [W/S] Move Carve Y (Up/Down)                       " << std::endl;
-    std::cout << "   [A/D] Move Carve X (Left/Right)                    " << std::endl;
-    std::cout << "   [Q/E] Move Carve Z (Near/Far)                      " << std::endl;
-    std::cout << "   [R/F] Radius (Expand/Shrink)                       " << std::endl;
-    std::cout << "   [Space] Toggle CSG Carving                         " << std::endl;
-    std::cout << "   [ESC] Exit Simulator                               " << std::endl;
+    std::cout << " Mouse Controls:                                      " << std::endl;
+    std::cout << "   [Move Mouse]   Pan Cutter X / Y                    " << std::endl;
+    std::cout << "   [Left Click]   Toggle Carving ON / OFF             " << std::endl;
+    std::cout << "   [Right Click]  Hold + Drag Up/Down: Depth (Z)      " << std::endl;
+    std::cout << "   [Middle Click] Hold + Drag Up/Down: Radius (R)     " << std::endl;
+    std::cout << " Keyboard Fallback:                                   " << std::endl;
+    std::cout << "   [W/S/A/D] Move Y/X | [Q/E] Move Z | [R/F] Radius    " << std::endl;
+    std::cout << "   [Space] Toggle Carve | [ESC] Exit Simulator        " << std::endl;
     std::cout << "======================================================" << std::endl;
 
     std::cout << "[1/4] Initializing SDL2..." << std::flush;
@@ -138,7 +140,7 @@ int main(int argc, char** argv) {
     // Power-on Reset Sequence
     top->clk = 0;
     top->reset = 1;
-    top->keycode = 0;
+    top->usb_data = 0;
     for (int i = 0; i < 10; i++) {
         top->clk = !top->clk;
         top->eval();
@@ -149,6 +151,10 @@ int main(int argc, char** argv) {
 
     bool running = true;
     uint8_t current_keycode = KEY_NONE;
+    uint8_t mouse_strobe = 0;
+    uint8_t mouse_buttons = 0;
+    int accum_dx = 0;
+    int accum_dy = 0;
 
     auto last_fps_time = std::chrono::steady_clock::now();
     auto last_render_time = std::chrono::steady_clock::now();
@@ -159,6 +165,8 @@ int main(int argc, char** argv) {
     while (running && !Verilated::gotFinish()) {
         // Poll SDL Events once per batch (every 1024 clock cycles)
         SDL_Event event;
+        bool mouse_active = false;
+
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
@@ -172,9 +180,38 @@ int main(int argc, char** argv) {
                 if (translate_sdl_key(event.key.keysym.sym) == current_keycode) {
                     current_keycode = KEY_NONE;
                 }
+            } else if (event.type == SDL_MOUSEMOTION) {
+                accum_dx += event.motion.xrel;
+                accum_dy += event.motion.yrel;
+                mouse_active = true;
+            } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+                if (event.button.button == SDL_BUTTON_LEFT)   mouse_buttons |= 0x01;
+                if (event.button.button == SDL_BUTTON_RIGHT)  mouse_buttons |= 0x02;
+                if (event.button.button == SDL_BUTTON_MIDDLE) mouse_buttons |= 0x04;
+                mouse_active = true;
+            } else if (event.type == SDL_MOUSEBUTTONUP) {
+                if (event.button.button == SDL_BUTTON_LEFT)   mouse_buttons &= ~0x01;
+                if (event.button.button == SDL_BUTTON_RIGHT)  mouse_buttons &= ~0x02;
+                if (event.button.button == SDL_BUTTON_MIDDLE) mouse_buttons &= ~0x04;
+                mouse_active = true;
             }
         }
-        top->keycode = current_keycode;
+
+        if (mouse_active) {
+            mouse_strobe ^= 1;
+            int8_t dx = (int8_t)std::max(-128, std::min(127, accum_dx));
+            int8_t dy = (int8_t)std::max(-128, std::min(127, accum_dy));
+            accum_dx = 0;
+            accum_dy = 0;
+
+            top->usb_data = ((uint32_t)mouse_strobe << 25) |
+                            ((uint32_t)1 << 24)            | // is_mouse = 1
+                            ((uint32_t)mouse_buttons << 16) |
+                            ((uint32_t)(uint8_t)dy << 8)   |
+                            ((uint32_t)(uint8_t)dx);
+        } else if (current_keycode != KEY_NONE) {
+            top->usb_data = (uint32_t)current_keycode; // is_mouse = 0
+        }
 
         bool frame_done_flag = false;
 

@@ -78,6 +78,8 @@ int main() {
 	MAX3421E_init();
 	xil_printf("initializing USB...\n");
 	USB_init();
+
+	BOOL mouse_strobe = 0;
 	while (1) {
 		xil_printf("."); //A tick here means one loop through the USB main handler
 		MAX3421E_Task();
@@ -101,7 +103,7 @@ int main() {
 					xil_printf("%x ", kbdbuf.keycode[i]);
 				}
 				//Outputs the first 4 keycodes using the USB GPIO channel 1
-				printHex (kbdbuf.keycode[0] + (kbdbuf.keycode[1]<<8) + (kbdbuf.keycode[2]<<16) + + (kbdbuf.keycode[3]<<24), 1);
+				printHex (kbdbuf.keycode[0] + (kbdbuf.keycode[1]<<8) + (kbdbuf.keycode[2]<<16) + (0<<24), 1);
 				//Modify to output the last 2 keycodes on channel 2.
 				xil_printf("\n");
 			}
@@ -116,12 +118,18 @@ int main() {
 					xil_printf("%x \n", rcode);
 					continue;
 				}
+
 				xil_printf("X displacement: ");
 				xil_printf("%d ", (signed char) buf.Xdispl);
 				xil_printf("Y displacement: ");
 				xil_printf("%d ", (signed char) buf.Ydispl);
 				xil_printf("Buttons: ");
 				xil_printf("%x\n", buf.button);
+				if (mouse_strobe)
+					mouse_strobe = 0;
+				else
+					mouse_strobe = 1;
+				printHex (buf.Xdispl + (buf.Ydispl<<8) + (buf.button<<16) + (1<<24) + (mouse_strobe<<25), 1);
 			}
 		} else if (GetUsbTaskState() == USB_STATE_ERROR) {
 			if (!errorflag) {

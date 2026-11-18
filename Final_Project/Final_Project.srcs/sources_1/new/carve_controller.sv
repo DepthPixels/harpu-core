@@ -4,7 +4,7 @@ module carve_controller(
     input logic clk,
     input logic reset, // Async high reset
     input logic frame_tick,
-    input logic [7:0] keycode,
+    input logic [31:0] usb_data,
 
     output logic signed [15:0] carve_x,
     output logic signed [15:0] carve_y,
@@ -19,6 +19,27 @@ module carve_controller(
     logic tick_dly;
     logic tick_pulse;
     assign tick_pulse = frame_tick && !tick_dly;
+
+    logic is_mouse;
+    logic mouse_strobe;
+    logic mouse_strobe_dly;
+    logic mouse_packet_pulse;
+
+    assign is_mouse = usb_data[24];
+    assign mouse_packet_pulse = is_mouse && (usb_data[25] != mouse_strobe_dly);
+
+    logic [7:0] keycode;
+    assign keycode = usb_data[7:0];
+
+    logic signed [15:0] delta_x, delta_y;
+    assign delta_x = {{8{usb_data[7]}}, usb_data[7:0]};
+    assign delta_y = {{8{usb_data[15]}}, usb_data[15:8]};
+
+    logic left_btn, right_btn, middle_btn, prev_left_btn;
+    assign left_btn   = usb_data[16];
+    assign right_btn  = usb_data[17];
+    assign middle_btn = usb_data[18];
+    
 
     // 256-entry reciprocal lookup table: 65536 / R (in Q8.8)
     logic signed [15:0] inv_rom [0:255];
@@ -38,6 +59,27 @@ module carve_controller(
             carve_z <= 16'shFF26;
             carve_radius <= 16'sh005A;
             carve_en <= 1'b1;
+            prev_left_btn <= 1'b0;
+        end else if (is_mouse) begin
+            if (mouse_packet_pulse) begin
+                prev_left_btn <= left_btn;
+
+                if (left_btn && !prev_left_btn) // Rising Edge
+                    carve_en <= ~carve_en;
+
+                if (right_btn)
+                    carve_z <= carve_z + delta_y;
+
+                else if (middle_btn) begin
+                    if ((carve_radius - delta_y) >= 16'sh001A && (carve_radius - delta_y) <= 16'sh00DA) // Bounding for inv
+                        carve_radius <= carve_radius - delta_y;
+                end
+
+                else begin
+                    carve_x <= carve_x + delta_x;
+                    carve_y <= carve_y - delta_y;
+                end
+            end
         end else if (tick_pulse) begin
             case (keycode)
                 8'h1A: carve_y <= carve_y + step_size; // W
@@ -73,6 +115,14 @@ module carve_controller(
             tick_dly <= 1'b0;
         end else begin
             tick_dly <= frame_tick;
+        end
+    end
+
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            mouse_strobe_dly <= 1'b0;
+        end else begin
+            mouse_strobe_dly <= usb_data[25];
         end
     end
 

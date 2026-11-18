@@ -156,7 +156,7 @@ module harpu_top (
         .clk(Clk),
         .reset(reset_ah),
         .frame_tick(frame_done),
-        .keycode(keycode0_gpio[7:0]),
+        .usb_data(keycode0_gpio),
         .carve_x(carve_x),
         .carve_y(carve_y),
         .carve_z(carve_z),

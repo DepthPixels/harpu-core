@@ -4,9 +4,9 @@ module sdf_scene(
     input  logic clk,
     input  logic reset, // Async high reset
 
-    input  logic signed [15:0] pos_x,
-    input  logic signed [15:0] pos_y,
-    input  logic signed [15:0] pos_z,
+    input  logic signed [15:0] pos_x_in,
+    input  logic signed [15:0] pos_y_in,
+    input  logic signed [15:0] pos_z_in,
     input  logic               in_valid,
 
     input  logic               carve_en,
@@ -15,6 +15,10 @@ module sdf_scene(
     input  logic signed [15:0] carve_z,
     input  logic signed [15:0] carve_radius,
     input  logic signed [15:0] inv_carve_radius,
+
+    input  logic        [3:0]  ray_tag_in,
+    output logic        [3:0]  ray_tag_out,
+    output logic signed [15:0] pos_x_out, pos_y_out, pos_z_out,
 
     output logic signed [15:0] dist_out,
     output logic               out_valid,
@@ -27,6 +31,10 @@ module sdf_scene(
     logic signed [15:0] center_y = 16'sh0000;
     logic signed [15:0] center_z = 16'sh0000;
     logic signed [15:0] radius = 16'sh0100;
+
+    logic signed [15:0] pos_x [0:11];
+    logic signed [15:0] pos_y [0:11];
+    logic signed [15:0] pos_z [0:11];
 
     logic signed [15:0] diff_x, diff_y, diff_z;
     logic signed [15:0] sq_x, sq_y, sq_z;
@@ -45,7 +53,7 @@ module sdf_scene(
     logic signed [15:0] d_diff;
     logic signed [15:0] d_rel;
     assign d_diff = (-dist_carve) - dist_sphere;
-    assign d_rel = 16'((32'(d_diff) * 32'(inv_carve_radius)) >>> 8);
+    assign d_rel = 16'(( {{16{d_diff[15]}}, d_diff} * {{16{inv_carve_radius[15]}}, inv_carve_radius} ) >>> 8);
 
     assign hit_carve = (-dist_carve >= dist_sphere) && carve_en;
 
@@ -60,9 +68,9 @@ module sdf_scene(
     end
 
     always_comb begin: SDF_SPHERE
-        diff_x = pos_x - center_x;
-        diff_y = pos_y - center_y;
-        diff_z = pos_z - center_z;
+        diff_x = pos_x_in - center_x;
+        diff_y = pos_y_in - center_y;
+        diff_z = pos_z_in - center_z;
 
         sq_x = 16'((32'(diff_x) * 32'(diff_x)) >>> 8);
         sq_y = 16'((32'(diff_y) * 32'(diff_y)) >>> 8);
@@ -72,9 +80,9 @@ module sdf_scene(
 
         dist_sphere = sqrt_sq_D - radius;
 
-        carve_diff_x = pos_x - carve_x;
-        carve_diff_y = pos_y - carve_y;
-        carve_diff_z = pos_z - carve_z;
+        carve_diff_x = pos_x_in - carve_x;
+        carve_diff_y = pos_y_in - carve_y;
+        carve_diff_z = pos_z_in - carve_z;
 
         carve_sq_x = 16'((32'(carve_diff_x) * 32'(carve_diff_x)) >>> 8);
         carve_sq_y = 16'((32'(carve_diff_y) * 32'(carve_diff_y)) >>> 8);
@@ -94,6 +102,32 @@ module sdf_scene(
         out_valid = out_valid_sphere;
     end
 
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            for (int i = 0; i < 12; i++) begin
+                pos_x[i] <= 16'sh0000;
+                pos_y[i] <= 16'sh0000;
+                pos_z[i] <= 16'sh0000;
+            end
+        end else begin
+            // Stage 0 register update
+            pos_x[0] <= pos_x_in;
+            pos_y[0] <= pos_y_in;
+            pos_z[0] <= pos_z_in;
+
+            // Stages 1 to 11 register updates
+            for (int i = 1; i < 12; i++) begin
+                pos_x[i] <= pos_x[i-1];
+                pos_y[i] <= pos_y[i-1];
+                pos_z[i] <= pos_z[i-1];
+            end
+        end
+    end
+
+    assign pos_x_out = pos_x[11];
+    assign pos_y_out = pos_y[11];
+    assign pos_z_out = pos_z[11];
+
     // Square Root Module
     fixed_point_sqrt_q8_8 sqrt_inst (
         .clk(clk),
@@ -101,7 +135,9 @@ module sdf_scene(
         .in_valid(in_valid),
         .radicand(sq_D),
         .root(sqrt_sq_D),
-        .out_valid(out_valid_sphere)
+        .out_valid(out_valid_sphere),
+        .tag_in(ray_tag_in),
+        .tag_out(ray_tag_out)
     );
 
     fixed_point_sqrt_q8_8 carve_sqrt_inst (

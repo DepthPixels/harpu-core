@@ -3,7 +3,7 @@
 module sim_top (
     input  logic        clk,
     input  logic        reset,
-    input  logic [7:0]  keycode,
+    input  logic [31:0] usb_data,
 
     output logic [16:0] fb_addr,
     output logic [11:0] fb_din,
@@ -23,7 +23,7 @@ module sim_top (
         .clk(clk),
         .reset(reset),
         .frame_tick(frame_done),
-        .keycode(keycode),
+        .usb_data(usb_data),
         .carve_x(carve_x),
         .carve_y(carve_y),
         .carve_z(carve_z),

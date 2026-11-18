@@ -1,62 +1,135 @@
 `timescale 1ns / 1ps
 
 module sphere_shader (
+    input  logic               clk,
+    input  logic               reset,
     input  logic signed [15:0] norm_x,
     input  logic signed [15:0] norm_y,
     input  logic signed [15:0] norm_z,
     output logic        [11:0] shaded_output
 );
 
-    logic signed [15:0] light_dir_x = 16'sh0080;
-    logic signed [15:0] light_dir_y = 16'sh0099;
-    logic signed [15:0] light_dir_z = 16'shFF60;
+    // Direction to light source: [0.5, 0.6, -0.625] normalized in Q8.8
+    localparam logic signed [15:0] LIGHT_DIR_X = 16'sh0080;
+    localparam logic signed [15:0] LIGHT_DIR_Y = 16'sh0099;
+    localparam logic signed [15:0] LIGHT_DIR_Z = 16'shFF60;
 
-    logic signed [15:0] half_x = 16'sh0047; // +0.277
-    logic signed [15:0] half_y = 16'sh0055; // +0.333
-    logic signed [15:0] half_z = 16'shFF19; // -0.901
+    // Blinn-Phong Half-vector: (L + V) / |L + V| with V = [0, 0, -1]
+    localparam logic signed [15:0] HALF_X = 16'sh0047; // +0.277
+    localparam logic signed [15:0] HALF_Y = 16'sh0055; // +0.333
+    localparam logic signed [15:0] HALF_Z = 16'shFF19; // -0.901
 
-    logic signed [15:0] dot_product;
-    logic signed [15:0] half_dot_product;
-    logic signed [15:0] s1, s2, s4, s8;
+    localparam logic [3:0] AMBIENT = 4'd3;
 
-    logic        [3:0]  diffuse;
-    logic        [3:0]  intensity;
-    logic        [3:0]  ambient = 4'd3;
+    // -------------------------------------------------------------
+    // Stage 1: Dot Products (N . L and N . H)
+    // -------------------------------------------------------------
+    logic signed [31:0] dp_full;
+    logic signed [31:0] hdp_full;
+    logic signed [15:0] dp_comb;
+    logic signed [15:0] hdp_comb;
+
+    assign dp_full  = 32'(norm_x) * 32'(LIGHT_DIR_X) + 
+                      32'(norm_y) * 32'(LIGHT_DIR_Y) + 
+                      32'(norm_z) * 32'(LIGHT_DIR_Z);
+    assign hdp_full = 32'(norm_x) * 32'(HALF_X) + 
+                      32'(norm_y) * 32'(HALF_Y) + 
+                      32'(norm_z) * 32'(HALF_Z);
+
+    assign dp_comb  = 16'(dp_full >>> 8);
+    assign hdp_comb = 16'(hdp_full >>> 8);
+
+    logic signed [15:0] st1_dot;
+    logic signed [15:0] st1_half;
+    logic               st1_spec_valid;
+
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            st1_dot        <= 16'sh0000;
+            st1_half       <= 16'sh0000;
+            st1_spec_valid <= 1'b0;
+        end else begin
+            st1_dot        <= dp_comb;
+            st1_half       <= (hdp_comb[15] == 1'b0) ? hdp_comb : 16'sh0000;
+            st1_spec_valid <= (dp_comb > 16'sh0000) && (hdp_comb[15] == 1'b0);
+        end
+    end
+
+    // -------------------------------------------------------------
+    // Stage 2: Specular S2 = S1^2
+    // -------------------------------------------------------------
+    logic signed [31:0] s2_mult;
+    logic signed [15:0] s2_comb;
+
+    assign s2_mult = 32'(st1_half) * 32'(st1_half);
+    assign s2_comb = 16'(s2_mult >>> 8);
+
+    logic signed [15:0] st2_dot;
+    logic signed [15:0] st2_s2;
+    logic               st2_spec_valid;
+
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            st2_dot        <= 16'sh0000;
+            st2_s2         <= 16'sh0000;
+            st2_spec_valid <= 1'b0;
+        end else begin
+            st2_dot        <= st1_dot;
+            st2_s2         <= st1_spec_valid ? s2_comb : 16'sh0000;
+            st2_spec_valid <= st1_spec_valid;
+        end
+    end
+
+    // -------------------------------------------------------------
+    // Stage 3: Specular S4 = S2^2
+    // -------------------------------------------------------------
+    logic signed [31:0] s4_mult;
+    logic signed [15:0] s4_comb;
+
+    assign s4_mult = 32'(st2_s2) * 32'(st2_s2);
+    assign s4_comb = 16'(s4_mult >>> 8);
+
+    logic signed [15:0] st3_dot;
+    logic signed [15:0] st3_s4;
+    logic               st3_spec_valid;
+
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            st3_dot        <= 16'sh0000;
+            st3_s4         <= 16'sh0000;
+            st3_spec_valid <= 1'b0;
+        end else begin
+            st3_dot        <= st2_dot;
+            st3_s4         <= st2_spec_valid ? s4_comb : 16'sh0000;
+            st3_spec_valid <= st2_spec_valid;
+        end
+    end
+
+    // -------------------------------------------------------------
+    // Final Stage (Combinational from Stage 3 Registers):
+    // S8 = S4^2, Diffuse, Ambient, Specular Clamping & RGB Pack
+    // -------------------------------------------------------------
+    logic signed [31:0] s8_mult;
+    logic signed [15:0] s8_comb;
     logic        [3:0]  specular;
-
+    logic        [3:0]  diffuse;
+    logic        [4:0]  r_add, r_sum, g_sum, b_sum;
     logic        [3:0]  r_base, g_base, b_base;
-    logic        [4:0]  r_add;
-    logic        [4:0]  r_sum, g_sum, b_sum;
     logic        [3:0]  red, green, blue;
 
-    always_comb begin
-        dot_product = 16'((32'(norm_x)*32'(light_dir_x) + 32'(norm_y)*32'(light_dir_y) + 32'(norm_z)*32'(light_dir_z)) >>> 8);
-        half_dot_product = 16'((32'(norm_x)*32'(half_x) + 32'(norm_y)*32'(half_y) + 32'(norm_z)*32'(half_z)) >>> 8);
+    assign s8_mult = 32'(st3_s4) * 32'(st3_s4);
+    assign s8_comb = 16'(s8_mult >>> 8);
 
-        // Specular Stuff
-        if (half_dot_product[15] == 0) begin
-            s1 = half_dot_product;
-            s2 = 16'((32'(s1) * 32'(s1)) >>> 8);
-            s4 = 16'((32'(s2) * 32'(s2)) >>> 8);
-            s8 = 16'((32'(s4) * 32'(s4)) >>> 8);
-        end
-        else begin
-            s1 = 16'sh0000;
-            s2 = 16'sh0000;
-            s4 = 16'sh0000;
-            s8 = 16'sh0000;
-        end
-        if (dot_product > 0 && half_dot_product[15] == 0) begin
-            specular = (s8 >= 16'sh0100) ? 4'd15 : s8[7:4];
-        end
-        else begin
+    always_comb begin
+        if (st3_spec_valid) begin
+            specular = (s8_comb >= 16'sh0100) ? 4'd15 : s8_comb[7:4];
+        end else begin
             specular = 4'd0;
         end
 
-        diffuse = (dot_product >= 16'sh0100) ? 4'd15 : ((dot_product > 0) ? dot_product[7:4] : 4'd0);
-        intensity = ambient + (((diffuse << 3) + (diffuse << 2)) >> 4);
+        diffuse = (st3_dot >= 16'sh0100) ? 4'd15 : ((st3_dot > 16'sh0000) ? st3_dot[7:4] : 4'd0);
 
-        r_add  = 5'(ambient) + 5'(diffuse);
+        r_add  = 5'(AMBIENT) + 5'(diffuse);
         r_base = (r_add > 5'd15) ? 4'd15 : r_add[3:0];
         g_base = diffuse >> 2;
         b_base = 4'd0;
@@ -68,6 +141,8 @@ module sphere_shader (
         red   = (r_sum > 5'd15) ? 4'd15 : r_sum[3:0];
         green = (g_sum > 5'd15) ? 4'd15 : g_sum[3:0];
         blue  = (b_sum > 5'd15) ? 4'd15 : b_sum[3:0];
+
         shaded_output = {red, green, blue};
     end
+
 endmodule
