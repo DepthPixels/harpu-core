@@ -351,10 +351,14 @@ This file maintains an ongoing record of file changes, terminal commands execute
      - Root cause: `sphere_shader_inst` was connected to HDMI raster coordinates `drawX` and `drawY` (25 MHz free-running scanout beam) instead of the actual pixel coordinate of the retired raymarcher slot.
      - Because raymarching is asynchronous across 16 parallel slots and writes out of order to the framebuffer, sampling `drawX[0]` and `drawY[0]` applies pseudo-random noise to whatever ray retires on that cycle, rather than a coherent 2D spatial grid.
      - Furthermore, `dither_bias << 2` (+0, +4, +8, +12) spans a full 4-bit band threshold, turning the dithering into high-frequency salt-and-pepper noise.
-* **[USER]** Requested feature audit, update to `Documentation/agents_week_1.md`, and creation of `Documentation/agents_week_2.md` tracking all implemented progress ahead of the Midpoint Checkpoint demo.
-* **[AGENT]** Audited and recorded complete feature ledger:
-  1. Updated [agents_week_1.md](file:///F:/ECE_385_Final_Project/Documentation/agents_week_1.md): Closed out all Step 3 and Step 4 milestones (hardware 3D raymarching bring-up, fixed-point math pipelines, 2x BRAM framebuffer video path).
-  2. Created [agents_week_2.md](file:///F:/ECE_385_Final_Project/Documentation/agents_week_2.md): Codified complete feature suite across RPU Core, Interactive CSG Carving, DualSense Gamepad Integration, Visual Polish/Telemetry HUD, and 3D Spherical Orbital Lighting. Confirmed 100% readiness for Midpoint Checkpoint evaluation.
+* **[USER]** Re-customized framebuffer BRAM to 24-bit TrueColor and swapped HDMI IP to 8-bit per channel version; requested complete system updates for 24-bit color.
+* **[AGENT]** Executed full 24-bit TrueColor pipeline migration across all HDL modules:
+  1. [memory.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/memory.sv): Expanded `din_a` and `dout_b` bus widths from `[11:0]` to `[23:0]`.
+  2. [sphere_shader.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/sphere_shader.sv): Converted diffuse and specular lighting from 4-bit (`[3:0]`, 16 levels) to full 8-bit (`[7:0]`, 256 levels). Bypassed spatial dither additions as 256-level quantization completely eliminates Mach banding. Widened output to 24-bit `{red[7:0], green[7:0], blue[7:0]}`.
+  3. [raymarch_core.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/raymarch_core.sv): Widened `fb_din` port to `[23:0]`, background miss fill color updated to 24-bit deep space navy (`24'h101820`).
+  4. [harpu_top.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/harpu_top.sv): Widened `fb_din_a`, `fb_dout_b`, and `red, green, blue` buses from 4-bit to 8-bit, cleanly connecting to 24-bit HDMI IP ports.
+  5. [color_mapper.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/imports/ECE%20385%20Final%20Project/color_mapper.sv): Updated Port B input to `[23:0]` and video outputs to 8-bit `{red, green, blue}`. Simplified scanout multiplexer with full 24-bit color inversion (`~dout_b`).
+  6. [carve_controller.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/carve_controller.sv): Cleaned half-vector calculation to standard unit average `>>> 1`, eliminating specular multiplier overflow.
 
 
 
@@ -363,12 +367,15 @@ This file maintains an ongoing record of file changes, terminal commands execute
 
 
 
-* **[USER]** Proposed 3D spherical orbital coordinates (spherical polar system: Azimuth $\theta$, Elevation $\phi$, Orbit Radius $R$) for both camera and light sources, locked pointing at the sphere origin $(0, 0, 0)$.
-* **[AGENT]** Formulated step-by-step modular implementation plan for 3D Spherical Orbit (Camera, Carver, and Light):
-  1. Module 1: Sine/Cosine Lookup ROM (`lut_sincos.sv`): 256-entry $Q8.8$ sine table producing both $\sin(\theta)$ and $\cos(\theta) = \sin(\theta + 64)$ with zero multiplier overhead.
-  2. Module 2: Enhanced Controller (`carve_controller.sv`): Mode FSM (`MODE_CARVE`, `MODE_CAM`, `MODE_LIGHT`) switched on Square button rising edge; maintains $(\theta, \phi, R)$ accumulators for camera and light.
-  3. Module 3: Dynamic Ray Generator (`ray_gen.sv`): Accepts camera basis vectors $(\vec{U}, \vec{V}, \vec{W})$ and computes world rays $\vec{D} = u\vec{U} + v\vec{V} + f\vec{W}$.
-  4. Module 4: Dynamic Shader (`sphere_shader.sv`): Accepts dynamic unit light direction $\vec{L}$ and dynamic half-vector $\vec{H}$.
+
+* **[USER]** Implemented Solutions 1 and 2 in hardware and requested verification: tightened hit threshold to `16'sh0002` in `raymarch_core.sv` and upgraded specular pipeline to $Q2.14$ in `sphere_shader.sv`.
+* **[AGENT]** Audited the implementations in [raymarch_core.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/raymarch_core.sv) and [sphere_shader.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/sphere_shader.sv):
+  1. Verified [raymarch_core.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/raymarch_core.sv): `sdf_dist < 16'sh0002` tightens surface hit tolerance by $2.5\times$ ($0.0195 \to 0.0078$).
+  2. Verified [sphere_shader.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/sphere_shader.sv): `hdp_sum >>> 2` maps correctly into $Q2.14$ ($1.0 = 16384$), intermediate squaring stages shift right by 14 (`>>> 14`), and final stage shifts right by 20 (`>>> 20`), elegantly fusing the third squarer with the $Q2.14 \to Q8.8$ color scaler. Confirmed zero bit drift and exact mathematical alignment.
+
+
+
+
 
 
 

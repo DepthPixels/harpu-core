@@ -21,7 +21,7 @@ module raymarch_core (
     input  logic        [1:0]  sphere_material,
     
     output logic [16:0] fb_addr,
-    output logic [11:0] fb_din,
+    output logic [23:0] fb_din,
     output logic        fb_we,
 
     output logic        frame_done
@@ -84,7 +84,7 @@ module raymarch_core (
     logic               is_carve_reg;
 
     logic signed [15:0] sdf_d_diff;
-    logic        [11:0] shaded_output;
+    logic        [23:0] shaded_output;
 
     // Pipelining stuff
     logic        [3:0]  issue_ptr;
@@ -194,7 +194,7 @@ module raymarch_core (
             pipe_norm_y       <= 16'sh0000;
             pipe_norm_z       <= 16'sh0000;
             fb_we             <= 1'b0;
-            fb_din            <= 12'd0;
+            fb_din            <= 24'd0;
             fb_addr           <= 17'd0;
             for (int i = 1; i <= 4; i++) begin
                 pipe_we_r[i]   <= 1'b0;
@@ -237,7 +237,7 @@ module raymarch_core (
             // Framebuffer writeback at Stage 5 (coincident with valid shaded_output)
             fb_we   <= pipe_we_r[4];
             fb_addr <= pipe_addr_r[4];
-            fb_din  <= pipe_hit_r[4] ? shaded_output : 12'h112;
+            fb_din  <= pipe_hit_r[4] ? shaded_output : 24'h101820;
 
             // FIFO Stuff
             if (can_feed == 1) begin
@@ -332,7 +332,7 @@ module raymarch_core (
             s0_retire_we <= 1'b0;
 
             if (sdf_valid == 1) begin
-                if (sdf_dist < 16'sh0005) begin
+                if (sdf_dist < 16'sh0002) begin
                     // Surface Hit: Retire slot, latch hit coordinates & write address
                     slot_active[ray_tag_out] <= 1'b0;
                     s0_retire_is_hit <= 1'b1;

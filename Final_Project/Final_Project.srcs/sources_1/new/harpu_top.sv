@@ -41,17 +41,17 @@ module harpu_top (
     // Video Scanout & Sync Signals
     logic [9:0] drawX, drawY;
     logic hsync, vsync, vde;
-    logic [3:0] red, green, blue;
+    logic [7:0] red, green, blue;
 
     // Framebuffer Interconnect (Port A: 100MHz Write, Port B: 25MHz Read)
     logic [16:0] fb_addr_a;
-    logic [11:0] fb_din_a;
+    logic [23:0] fb_din_a;
     logic        fb_ena_a;
     logic        fb_wea_a;
 
     logic [16:0] fb_addr_b;
     logic        fb_ena_b;
-    logic [11:0] fb_dout_b;
+    logic [23:0] fb_dout_b;
 
     // Carving Control Signals
     logic        carve_en;

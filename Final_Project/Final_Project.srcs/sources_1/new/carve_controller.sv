@@ -133,9 +133,9 @@ module carve_controller(
             light_dir_y <= sin_phi_light;
             light_dir_z <= -16'((32'(cos_phi_light) * 32'(cos_theta_light)) >>> 8);
 
-            half_x <= 16'((32'((light_dir_x + 16'sh0000) >>> 1) * 32'(16'sh011A)) >>> 8);
-            half_y <= 16'((32'((light_dir_y + 16'sh0000) >>> 1) * 32'(16'sh011A)) >>> 8);
-            half_z <= 16'((32'((light_dir_z - 16'sh0100) >>> 1) * 32'(16'sh011A)) >>> 8);
+            half_x <= (light_dir_x) >>> 1;
+            half_y <= (light_dir_y) >>> 1;
+            half_z <= (light_dir_z - 16'sh0100) >>> 1;
         end
     end
 

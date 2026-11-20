@@ -15,7 +15,7 @@ module sphere_shader (
     input  logic signed [15:0] half_y,
     input  logic signed [15:0] half_z,
     input  logic        [1:0]  sphere_material,
-    output logic        [11:0] shaded_output
+    output logic        [23:0] shaded_output
 );
 
     /*
@@ -68,7 +68,8 @@ module sphere_shader (
     assign hdp_sum = p_hx + p_hy + p_hz;
 
     assign dp_comb  = 16'(dp_sum >>> 8);
-    assign hdp_comb = 16'(hdp_sum >>> 8);
+    // Q2.14
+    assign hdp_comb = 16'(hdp_sum >>> 2);
 
     logic signed [15:0] st1_dot;
     logic signed [15:0] st1_half;
@@ -92,8 +93,9 @@ module sphere_shader (
     logic signed [31:0] s2_mult;
     logic signed [15:0] s2_comb;
 
+    // Q4.28
     assign s2_mult = 32'(st1_half) * 32'(st1_half);
-    assign s2_comb = 16'(s2_mult >>> 8);
+    assign s2_comb = 16'(s2_mult >>> 14);
 
     logic signed [15:0] st2_dot;
     logic signed [15:0] st2_s2;
@@ -116,9 +118,9 @@ module sphere_shader (
     // -------------------------------------------------------------
     logic signed [31:0] s4_mult;
     logic signed [15:0] s4_comb;
-
+    // Q4.28
     assign s4_mult = 32'(st2_s2) * 32'(st2_s2);
-    assign s4_comb = 16'(s4_mult >>> 8);
+    assign s4_comb = 16'(s4_mult >>> 14);
 
     logic signed [15:0] st3_dot;
     logic signed [15:0] st3_dot_dithered;
@@ -139,84 +141,75 @@ module sphere_shader (
 
     // -------------------------------------------------------------
     // Final Stage (Combinational from Stage 3 Registers):
-    // S8 = S4^2, Diffuse, Ambient, Specular Clamping & RGB Pack
+    // S8 = S4^2, Diffuse, Ambient, Specular Clamping & 24-bit RGB Pack
     // -------------------------------------------------------------
     logic signed [31:0] s8_mult;
     logic signed [15:0] s8_comb;
-    logic        [3:0]  specular;
-    logic        [3:0]  diffuse;
-    logic        [4:0]  r_add, g_add, b_add, r_sum, g_sum, b_sum;
-    logic        [3:0]  r_base, g_base, b_base;
-    logic        [3:0]  red, green, blue;
-    logic        [1:0]  dither_bias;
-
+    logic        [7:0]  specular;
+    logic        [7:0]  diffuse;
+    logic        [8:0]  r_add, g_add, b_add, r_sum, g_sum, b_sum;
+    logic        [7:0]  r_base, g_base, b_base;
+    logic        [7:0]  red, green, blue;
+    // Q4.28
     assign s8_mult = 32'(st3_s4) * 32'(st3_s4);
-    assign s8_comb = 16'(s8_mult >>> 8);
+    assign s8_comb = 16'(s8_mult >>> 20);
+
+    localparam logic [7:0] AMBIENT_24 = 8'd48; // Ambient base in 8-bit
 
     always_comb begin
         if (st3_spec_valid) begin
-            specular = (s8_comb >= 16'sh0100) ? 4'd15 : s8_comb[7:4];
+            specular = (s8_comb >= 16'sh0100) ? 8'd255 : ((s8_comb > 16'sh0000) ? s8_comb[7:0] : 8'd0);
         end else begin
-            specular = 4'd0;
+            specular = 8'd0;
         end
 
-        case ({pix_x, pix_y})
-            2'b00: dither_bias = 2'd0;
-            2'b01: dither_bias = 2'd3;
-            2'b10: dither_bias = 2'd2;
-            2'b11: dither_bias = 2'd1;
-        endcase
+        diffuse = (st3_dot >= 16'sh0100) ? 8'd255 : ((st3_dot > 16'sh0000) ? st3_dot[7:0] : 8'd0);
 
-        st3_dot_dithered = st3_dot + 16'(dither_bias << 2);
-
-        diffuse = (st3_dot_dithered >= 16'sh0100) ? 4'd15 : ((st3_dot_dithered > 16'sh0000) ? st3_dot_dithered[7:4] : 4'd0);
-
-        r_add = 5'b0;
-        g_add = 5'b0;
-        b_add = 5'b0;
+        r_add = 9'b0;
+        g_add = 9'b0;
+        b_add = 9'b0;
 
         case (sphere_material)
             2'b00: begin
-                // Orange
-                r_add  = 5'd3 + 5'(diffuse);
-                r_base = (r_add > 5'd15) ? 4'd15 : r_add[3:0];
+                // Orange / Terracotta
+                r_add  = 9'(AMBIENT_24) + 9'(diffuse);
+                r_base = (r_add > 9'd255) ? 8'd255 : r_add[7:0];
                 g_base = diffuse >> 2;
-                b_base = 4'd0;
+                b_base = 8'd0;
             end
             2'b01: begin
-                // Green
+                // Green / Emerald Jade
                 r_base = diffuse >> 3;
-                g_add  = 5'd2 + 5'(diffuse);
-                g_base = (g_add > 5'd15) ? 4'd15 : g_add[3:0];
-                b_add  = 5'd1 + 5'(diffuse >> 1);
-                b_base = (b_add > 5'd15) ? 4'd15 : b_add[3:0];
+                g_add  = 9'd32 + 9'(diffuse);
+                g_base = (g_add > 9'd255) ? 8'd255 : g_add[7:0];
+                b_add  = 9'd16 + 9'(diffuse >> 1);
+                b_base = (b_add > 9'd255) ? 8'd255 : b_add[7:0];
             end
             2'b10: begin
-                // Blue
-                r_add  = 5'd1 + 5'(diffuse >> 2);
-                r_base = (r_add > 5'd15) ? 4'd15 : r_add[3:0];
+                // Blue / Cobalt
+                r_add  = 9'd16 + 9'(diffuse >> 2);
+                r_base = (r_add > 9'd255) ? 8'd255 : r_add[7:0];
                 g_base = diffuse >> 1;
-                b_add  = 5'd3 + 5'(diffuse);
-                b_base = (b_add > 5'd15) ? 4'd15 : b_add[3:0];
+                b_add  = 9'(AMBIENT_24) + 9'(diffuse);
+                b_base = (b_add > 9'd255) ? 8'd255 : b_add[7:0];
             end
             2'b11: begin
-                // Purple
-                r_add  = 5'd1 + 5'(diffuse);
-                r_base = (r_add > 5'd15) ? 4'd15 : r_add[3:0];
-                g_base = 4'd0;
-                b_add  = 5'd2 + 5'(diffuse);
-                b_base = (b_add > 5'd15) ? 4'd15 : b_add[3:0];
+                // Purple / Amethyst
+                r_add  = 9'd16 + 9'(diffuse);
+                r_base = (r_add > 9'd255) ? 8'd255 : r_add[7:0];
+                g_base = 8'd0;
+                b_add  = 9'd32 + 9'(diffuse);
+                b_base = (b_add > 9'd255) ? 8'd255 : b_add[7:0];
             end
         endcase
 
-        r_sum = 5'(r_base) + 5'(specular);
-        g_sum = 5'(g_base) + 5'(specular);
-        b_sum = 5'(b_base) + 5'(specular);
+        r_sum = 9'(r_base) + 9'(specular);
+        g_sum = 9'(g_base) + 9'(specular);
+        b_sum = 9'(b_base) + 9'(specular);
 
-        red   = (r_sum > 5'd15) ? 4'd15 : r_sum[3:0];
-        green = (g_sum > 5'd15) ? 4'd15 : g_sum[3:0];
-        blue  = (b_sum > 5'd15) ? 4'd15 : b_sum[3:0];
-        
+        red   = (r_sum > 9'd255) ? 8'd255 : r_sum[7:0];
+        green = (g_sum > 9'd255) ? 8'd255 : g_sum[7:0];
+        blue  = (b_sum > 9'd255) ? 8'd255 : b_sum[7:0];
 
         shaded_output = {red, green, blue};
     end

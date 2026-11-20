@@ -12,12 +12,12 @@ module color_mapper (
     // BRAM Port B Read Interface
     output logic [16:0] address_b,
     output logic        ena_b,
-    input  logic [11:0] dout_b,
+    input  logic [23:0] dout_b,
 
-    // RGB Output to hdmi_tx_0
-    output logic [3:0]  red,
-    output logic [3:0]  green,
-    output logic [3:0]  blue
+    // RGB Output to hdmi_tx_0 (8-bit per channel TrueColor)
+    output logic [7:0]  red,
+    output logic [7:0]  green,
+    output logic [7:0]  blue
 );
 
     logic [9:0] next_x;
@@ -33,10 +33,6 @@ module color_mapper (
     logic is_crosshair;
     logic is_corner;
 
-    logic [11:0] dout_prev;
-    logic [11:0] cout;
-    logic [11:0] BACK = 12'h112;
-
     assign x_0 = 320 + (((carve_x <<< 4) - carve_x) >>> 4);
     assign y_0 = 240 - (((carve_y <<< 4) - carve_y) >>> 4);
     assign R = (((carve_radius <<< 4) - carve_radius) >>> 4);
@@ -45,7 +41,6 @@ module color_mapper (
     assign delta_y = (drawY > y_0) ? drawY - y_0 : y_0 - drawY;
     assign x_r_diff = (delta_x > R) ? delta_x - R : R - delta_x;
     assign y_r_diff = (delta_y > R) ? delta_y - R : R - delta_y;
-
 
     assign is_crosshair = ((delta_x >= GAP) && (delta_x <= LENGTH) && (delta_y <= 16'sd1)) || ((delta_y >= GAP) && (delta_y <= LENGTH) && (delta_x <= 16'sd1));
     assign is_corner = ((x_r_diff <= 16'sd1) && (delta_y >= (R - CORNER_LEN)) && (delta_y <= R)) || ((y_r_diff <= 16'sd1) && (delta_x >= (R - CORNER_LEN)) && (delta_x <= R));
@@ -64,30 +59,14 @@ module color_mapper (
     assign ena_b     = 1'b1;
 
     always_comb begin
-        if (!drawX[0] && (((dout_prev == BACK) && (dout_b != BACK)) || ((dout_prev != BACK) && (dout_b == BACK)))) begin
-            cout[11:8] = (dout_b[11:8] >> 1) + (dout_prev[11:8] >> 1);
-            cout[7:4]  = (dout_b[7:4] >> 1) + (dout_prev[7:4] >> 1);
-            cout[3:0]  = (dout_b[3:0] >> 1) + (dout_prev[3:0] >> 1);
-        end else begin
-            cout = dout_b;
-        end
-
         if ((drawX < 10'd640) && (drawY < 10'd480)) begin
             if (is_crosshair || is_corner) begin
-                {red, green, blue} = ~cout;
+                {red, green, blue} = ~dout_b;
             end else begin
-                {red, green, blue} = cout;
+                {red, green, blue} = dout_b;
             end
         end else begin
-            {red, green, blue} = 12'h000;
-        end
-    end
-
-    always_ff @(posedge pixel_clk or posedge reset) begin
-        if (reset) begin
-            dout_prev <= 12'h000;
-        end else begin
-            dout_prev <= dout_b;
+            {red, green, blue} = 24'h000000;
         end
     end
 
