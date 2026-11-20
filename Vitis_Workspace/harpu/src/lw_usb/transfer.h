@@ -11,6 +11,7 @@
 #define HID_K           1       //HID Keyboard boot driver number in DEV_RECORD
 #define HID_M           2       //HID Mouse boot driver number in DEV_RECORD
 #define MSD             3       //Mass storage class driver number in DEV_RECORD
+#define HID_DS          4       //HID DualSense controller driver number in DEV_RECORD
 
 /* Standard Device Requests */
 
@@ -100,6 +101,8 @@
 #define HID_PROTOCOL_NONE           0x00
 #define HID_PROTOCOL_KEYBOARD       0x01
 #define HID_PROTOCOL_MOUSE          0x02
+#define SONY_VENDOR_ID              0x054C  // Sony Vendor ID
+#define DUALSENSE_PRODUCT_ID        0x0CE6  // DualSense Product ID
 
 /* USB Setup Packet Structure   */
 typedef struct {

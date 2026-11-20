@@ -59,8 +59,8 @@ CLASS_CALLBACK_TABLE ClientDriverTable[ USB_NUMCLASSES ] = {
         0
     },
     {
-    	DummyProbe,
-    	DummyEventHandler,
+    	HIDGProbe,
+    	HIDGEventHandler,
     	0
     }
 };

@@ -12,6 +12,7 @@ module raymarch_core (
     input  logic signed [15:0] carve_z,
     input  logic signed [15:0] carve_radius,
     input  logic signed [15:0] inv_carve_radius,
+    input  logic        [1:0]  sphere_material,
     
     output logic [16:0] fb_addr,
     output logic [11:0] fb_din,
@@ -143,7 +144,7 @@ module raymarch_core (
     logic        pipe_hit_r  [1:4];
 
     logic can_feed;
-    assign can_feed = (fifo_count <= 5'd10) && (pixels_fed < 17'd76800);
+    assign can_feed = (fifo_count <= 5'd6) && (pixels_fed < 17'd76800);
     assign ray_in_valid = can_feed;
 
     logic [3:0] ray_tag_reg;
@@ -451,6 +452,7 @@ module raymarch_core (
         .norm_x(pipe_norm_x),
         .norm_y(pipe_norm_y),
         .norm_z(pipe_norm_z),
+        .sphere_material(sphere_material),
         .shaded_output(shaded_output)
     );
 

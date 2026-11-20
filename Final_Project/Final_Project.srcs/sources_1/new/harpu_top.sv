@@ -135,6 +135,8 @@ module harpu_top (
         end
     end
 
+    logic [1:0] sphere_material;
+
     raymarch_core raymarch_inst (
         .clk(Clk),
         .reset(reset_ah),
@@ -149,19 +151,21 @@ module harpu_top (
         .fb_din(fb_din_a),
         .fb_we(fb_wea_a),
         .frame_done(frame_done),
-        .inv_carve_radius(inv_carve_radius)
+        .inv_carve_radius(inv_carve_radius),
+        .sphere_material(sphere_material)
     );
 
     carve_controller carve_controller_inst (
         .clk(Clk),
         .reset(reset_ah),
         .frame_tick(frame_done),
-        .usb_data(keycode0_gpio),
+        .usb_data_in({ keycode1_gpio, keycode0_gpio }),
         .carve_x(carve_x),
         .carve_y(carve_y),
         .carve_z(carve_z),
         .carve_radius(carve_radius),
         .carve_en(carve_en),
+        .sphere_material(sphere_material),
         .inv_carve_radius(inv_carve_radius)
     );
 
@@ -188,7 +192,10 @@ module harpu_top (
         .dout_b(fb_dout_b),
         .red(red),
         .green(green),
-        .blue(blue)
+        .blue(blue),
+        .carve_x(carve_x),
+        .carve_y(carve_y),
+        .carve_radius(carve_radius)
     );
 
     hdmi_tx_0 vga_to_hdmi (

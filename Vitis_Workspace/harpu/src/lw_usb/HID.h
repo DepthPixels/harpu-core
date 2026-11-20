@@ -38,13 +38,32 @@ typedef struct {
 	BYTE reserved;
 	BYTE keycode[6];
 } BOOT_KBD_REPORT;
+// gamepad report is 8 bytes
+typedef struct {
+	BYTE buf[64];
+	/*
+	1: BYTE lstickx;
+	2: BYTE lsticky;
+	3: BYTE rstickx;
+	4: BYTE rsticky;
+	5: BYTE ltrigger;
+	6: BYTE rtrigger;
+	// _ means both here
+	8: BYTE dpad_buttons;
+	9: BYTE shoulders_system;
+	*/
+} GAMEPAD_REPORT;
 
 /* Function prototypes */
 BOOL HIDMProbe(BYTE address, DWORD flags);
 BOOL HIDKProbe(BYTE address, DWORD flags);
+// Custom DualSense Probe
+BOOL HIDGProbe(BYTE address, DWORD flags);
 void HID_init(void);
 BYTE mousePoll(BOOT_MOUSE_REPORT* buf);
 BYTE kbdPoll(BOOT_KBD_REPORT* buf);
+BYTE gamepadPoll(GAMEPAD_REPORT* buf);
 BOOL HIDMEventHandler(BYTE addr, BYTE event, void *data, DWORD size);
 BOOL HIDKEventHandler(BYTE addr, BYTE event, void *data, DWORD size);
+BOOL HIDGEventHandler(BYTE addr, BYTE event, void *data, DWORD size);
 #endif // _HID_h_

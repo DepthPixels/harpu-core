@@ -6,6 +6,7 @@ module sphere_shader (
     input  logic signed [15:0] norm_x,
     input  logic signed [15:0] norm_y,
     input  logic signed [15:0] norm_z,
+    input  logic        [1:0]  sphere_material,
     output logic        [11:0] shaded_output
 );
 
@@ -133,7 +134,7 @@ module sphere_shader (
     logic signed [15:0] s8_comb;
     logic        [3:0]  specular;
     logic        [3:0]  diffuse;
-    logic        [4:0]  r_add, r_sum, g_sum, b_sum;
+    logic        [4:0]  r_add, g_add, b_add, r_sum, g_sum, b_sum;
     logic        [3:0]  r_base, g_base, b_base;
     logic        [3:0]  red, green, blue;
 
@@ -149,10 +150,43 @@ module sphere_shader (
 
         diffuse = (st3_dot >= 16'sh0100) ? 4'd15 : ((st3_dot > 16'sh0000) ? st3_dot[7:4] : 4'd0);
 
-        r_add  = 5'(AMBIENT) + 5'(diffuse);
-        r_base = (r_add > 5'd15) ? 4'd15 : r_add[3:0];
-        g_base = diffuse >> 2;
-        b_base = 4'd0;
+        r_add = 5'b0;
+        g_add = 5'b0;
+        b_add = 5'b0;
+
+        case (sphere_material)
+            2'b00: begin
+                // Orange
+                r_add  = 5'd3 + 5'(diffuse);
+                r_base = (r_add > 5'd15) ? 4'd15 : r_add[3:0];
+                g_base = diffuse >> 2;
+                b_base = 4'd0;
+            end
+            2'b01: begin
+                // Green
+                r_base = diffuse >> 3;
+                g_add  = 5'd2 + 5'(diffuse);
+                g_base = (g_add > 5'd15) ? 4'd15 : g_add[3:0];
+                b_add  = 5'd1 + 5'(diffuse >> 1);
+                b_base = (b_add > 5'd15) ? 4'd15 : b_add[3:0];
+            end
+            2'b10: begin
+                // Blue
+                r_add  = 5'd1 + 5'(diffuse >> 2);
+                r_base = (r_add > 5'd15) ? 4'd15 : r_add[3:0];
+                g_base = diffuse >> 1;
+                b_add  = 5'd3 + 5'(diffuse);
+                b_base = (b_add > 5'd15) ? 4'd15 : b_add[3:0];
+            end
+            2'b11: begin
+                // Purple
+                r_add  = 5'd1 + 5'(diffuse);
+                r_base = (r_add > 5'd15) ? 4'd15 : r_add[3:0];
+                g_base = 4'd0;
+                b_add  = 5'd2 + 5'(diffuse);
+                b_base = (b_add > 5'd15) ? 4'd15 : b_add[3:0];
+            end
+        endcase
 
         r_sum = 5'(r_base) + 5'(specular);
         g_sum = 5'(g_base) + 5'(specular);
@@ -161,6 +195,7 @@ module sphere_shader (
         red   = (r_sum > 5'd15) ? 4'd15 : r_sum[3:0];
         green = (g_sum > 5'd15) ? 4'd15 : g_sum[3:0];
         blue  = (b_sum > 5'd15) ? 4'd15 : b_sum[3:0];
+        
 
         shaded_output = {red, green, blue};
     end

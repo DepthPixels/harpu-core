@@ -33,14 +33,14 @@ module sdf_scene(
     localparam logic signed [15:0] radius   = 16'sh0100;
 
     // 14-stage position shift registers (Cycle 0 to Cycle 13, valid at Cycle 14)
-    logic signed [15:0] pos_x [0:13];
-    logic signed [15:0] pos_y [0:13];
-    logic signed [15:0] pos_z [0:13];
+    logic signed [15:0] pos_x [0:12];
+    logic signed [15:0] pos_y [0:12];
+    logic signed [15:0] pos_z [0:12];
 
     // 13-stage carve_en shift register to align with square root outputs
-    logic carve_en_pipe [0:12];
+    logic carve_en_pipe [0:11];
     logic cur_carve_en;
-    assign cur_carve_en = carve_en_pipe[12];
+    assign cur_carve_en = carve_en_pipe[11];
 
     // -------------------------------------------------------------
     // Input Combinational Differences (Cycle 0)
@@ -77,12 +77,12 @@ module sdf_scene(
             r_in_valid   <= 1'b0;
             r_ray_tag    <= 4'd0;
 
-            for (int i = 0; i < 14; i++) begin
+            for (int i = 0; i < 13; i++) begin
                 pos_x[i] <= 16'sh0000;
                 pos_y[i] <= 16'sh0000;
                 pos_z[i] <= 16'sh0000;
             end
-            for (int i = 0; i < 13; i++) begin
+            for (int i = 0; i < 12; i++) begin
                 carve_en_pipe[i] <= 1'b0;
             end
         end else begin
@@ -99,22 +99,22 @@ module sdf_scene(
             pos_x[0] <= pos_x_in;
             pos_y[0] <= pos_y_in;
             pos_z[0] <= pos_z_in;
-            for (int i = 1; i < 14; i++) begin
+            for (int i = 1; i < 13; i++) begin
                 pos_x[i] <= pos_x[i-1];
                 pos_y[i] <= pos_y[i-1];
                 pos_z[i] <= pos_z[i-1];
             end
 
             carve_en_pipe[0] <= carve_en;
-            for (int i = 1; i < 13; i++) begin
+            for (int i = 1; i < 12; i++) begin
                 carve_en_pipe[i] <= carve_en_pipe[i-1];
             end
         end
     end
 
-    assign pos_x_out = pos_x[13];
-    assign pos_y_out = pos_y[13];
-    assign pos_z_out = pos_z[13];
+    assign pos_x_out = pos_x[12];
+    assign pos_y_out = pos_y[12];
+    assign pos_z_out = pos_z[12];
 
     // -------------------------------------------------------------
     // Fast 3-Term Sum into Square Root (Cycle 1 -> Cycle 2, ~3.3 ns delay)
@@ -161,7 +161,6 @@ module sdf_scene(
     // -------------------------------------------------------------
     logic signed [15:0] dist_sphere;
     logic signed [15:0] dist_carve;
-    logic signed [15:0] comb_dist_out;
     logic signed [15:0] comb_d_diff;
     logic               comb_hit_carve;
 
@@ -172,29 +171,15 @@ module sdf_scene(
         comb_hit_carve = (-dist_carve >= dist_sphere) && cur_carve_en;
 
         if (cur_carve_en) begin
-            comb_dist_out = (dist_sphere > -dist_carve) ? dist_sphere : -dist_carve;
+            dist_out = (dist_sphere > -dist_carve) ? dist_sphere : -dist_carve;
         end else begin
-            comb_dist_out = dist_sphere;
+            dist_out = dist_sphere;
         end
     end
 
-    // -------------------------------------------------------------
-    // Stage 14 Output Pipeline Registers (Decouples Sqrt from Ray Stepping, Cycle 14)
-    // -------------------------------------------------------------
-    always_ff @(posedge clk or posedge reset) begin
-        if (reset) begin
-            dist_out    <= 16'sh0000;
-            out_valid   <= 1'b0;
-            hit_carve   <= 1'b0;
-            d_diff      <= 16'sh0000;
-            ray_tag_out <= 4'd0;
-        end else begin
-            dist_out    <= comb_dist_out;
-            out_valid   <= out_valid_sphere;
-            hit_carve   <= comb_hit_carve;
-            d_diff      <= comb_d_diff;
-            ray_tag_out <= sqrt_tag_out;
-        end
-    end
+    assign out_valid = out_valid_sphere;
+    assign ray_tag_out = sqrt_tag_out;
+    assign hit_carve = comb_hit_carve;
+    assign d_diff = comb_d_diff;
 
 endmodule

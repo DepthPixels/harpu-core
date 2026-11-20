@@ -16,7 +16,7 @@ extern HID_DEVICE hid_device;
 static XGpio Gpio_hex;
 
 static BYTE addr = 1; 				//hard-wired USB address
-const char* const devclasses[] = { " Uninitialized", " HID Keyboard", " HID Mouse", " Mass storage" };
+const char* const devclasses[] = { " Uninitialized", " HID Keyboard", " HID Mouse", " Mass storage", " DualSense " };
 
 BYTE GetDriverandReport() {
 	BYTE i;
@@ -34,22 +34,24 @@ BYTE GetDriverandReport() {
 			device = tpl_ptr->devclass;
 		}
 	}
-	//Query rate and protocol
-	rcode = XferGetIdle(addr, 0, hid_device.interface, 0, &tmpbyte);
-	if (rcode) {   //error handling
-		xil_printf("GetIdle Error. Error code: ");
-		xil_printf("%x \n", rcode);
-	} else {
-		xil_printf("Update rate: ");
-		xil_printf("%x \n", tmpbyte);
-	}
-	xil_printf("Protocol: ");
-	rcode = XferGetProto(addr, 0, hid_device.interface, &tmpbyte);
-	if (rcode) {   //error handling
-		xil_printf("GetProto Error. Error code ");
-		xil_printf("%x \n", rcode);
-	} else {
-		xil_printf("%d \n", tmpbyte);
+	if (device != 4) { // Only for kb and mouse
+		//Query rate and protocol
+		rcode = XferGetIdle(addr, 0, hid_device.interface, 0, &tmpbyte);
+		if (rcode) {   //error handling
+			xil_printf("GetIdle Error. Error code: ");
+			xil_printf("%x \n", rcode);
+		} else {
+			xil_printf("Update rate: ");
+			xil_printf("%x \n", tmpbyte);
+		}
+		xil_printf("Protocol: ");
+		rcode = XferGetProto(addr, 0, hid_device.interface, &tmpbyte);
+		if (rcode) {   //error handling
+			xil_printf("GetProto Error. Error code ");
+			xil_printf("%x \n", rcode);
+		} else {
+			xil_printf("%d \n", tmpbyte);
+		}
 	}
 	return device;
 }
@@ -66,9 +68,10 @@ int main() {
    	XGpio_SetDataDirection(&Gpio_hex, 2, 0x00000000); //configure hex display GPIO
 
 
-   	BYTE rcode;
+  BYTE rcode;
 	BOOT_MOUSE_REPORT buf;		//USB mouse report
 	BOOT_KBD_REPORT kbdbuf;
+	GAMEPAD_REPORT gamepadbuf; // gamepad report
 
 	BYTE runningdebugflag = 0;//flag to dump out a bunch of information when we first get to USB_STATE_RUNNING
 	BYTE errorflag = 0; //flag once we get an error device so we don't keep dumping out state info
@@ -80,6 +83,7 @@ int main() {
 	USB_init();
 
 	BOOL mouse_strobe = 0;
+	BOOL gamepad_strobe = 0;
 	while (1) {
 		xil_printf("."); //A tick here means one loop through the USB main handler
 		MAX3421E_Task();
@@ -130,6 +134,35 @@ int main() {
 				else
 					mouse_strobe = 1;
 				printHex (buf.Xdispl + (buf.Ydispl<<8) + (buf.button<<16) + (1<<24) + (mouse_strobe<<25), 1);
+			}
+
+			else if (device == 4) {
+				// Gamepad shi
+				rcode = gamepadPoll(&gamepadbuf);
+				if (rcode == hrNAK) {
+					continue;
+				} else if (rcode) {
+					xil_printf("Rcode: ");
+					xil_printf("%x \n", rcode);
+					continue;
+				}
+
+				if (gamepad_strobe)
+					gamepad_strobe = 0;
+				else
+					gamepad_strobe = 1;
+
+				// Channel 1 has both stick axes
+				u32 stick_data = (gamepadbuf.buf[1]) | (gamepadbuf.buf[2] << 8) | (gamepadbuf.buf[3] << 16) | (gamepadbuf.buf[4] << 24);
+
+				// Channel 2 has Triggers + Buttons + Strobe
+				u32 btn_data = (gamepadbuf.buf[5]) | (gamepadbuf.buf[6] << 8) | (gamepadbuf.buf[8] << 16) | (gamepadbuf.buf[9] << 24);
+				btn_data |= (1 << 30);           // is_gamepad mode flag
+				if (gamepad_strobe) btn_data |= (1 << 31);
+
+				// Write both channels
+				printHex(stick_data, 1);
+				printHex(btn_data, 2);
 			}
 		} else if (GetUsbTaskState() == USB_STATE_ERROR) {
 			if (!errorflag) {
