@@ -33,6 +33,10 @@ module color_mapper (
     logic is_crosshair;
     logic is_corner;
 
+    logic [11:0] dout_prev;
+    logic [11:0] cout;
+    logic [11:0] BACK = 12'h112;
+
     assign x_0 = 320 + (((carve_x <<< 4) - carve_x) >>> 4);
     assign y_0 = 240 - (((carve_y <<< 4) - carve_y) >>> 4);
     assign R = (((carve_radius <<< 4) - carve_radius) >>> 4);
@@ -60,14 +64,30 @@ module color_mapper (
     assign ena_b     = 1'b1;
 
     always_comb begin
+        if (!drawX[0] && (((dout_prev == BACK) && (dout_b != BACK)) || ((dout_prev != BACK) && (dout_b == BACK)))) begin
+            cout[11:8] = (dout_b[11:8] >> 1) + (dout_prev[11:8] >> 1);
+            cout[7:4]  = (dout_b[7:4] >> 1) + (dout_prev[7:4] >> 1);
+            cout[3:0]  = (dout_b[3:0] >> 1) + (dout_prev[3:0] >> 1);
+        end else begin
+            cout = dout_b;
+        end
+
         if ((drawX < 10'd640) && (drawY < 10'd480)) begin
             if (is_crosshair || is_corner) begin
-                {red, green, blue} = ~dout_b;
+                {red, green, blue} = ~cout;
             end else begin
-                {red, green, blue} = dout_b;
+                {red, green, blue} = cout;
             end
         end else begin
             {red, green, blue} = 12'h000;
+        end
+    end
+
+    always_ff @(posedge pixel_clk or posedge reset) begin
+        if (reset) begin
+            dout_prev <= 12'h000;
+        end else begin
+            dout_prev <= dout_b;
         end
     end
 

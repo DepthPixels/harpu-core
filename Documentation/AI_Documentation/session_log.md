@@ -343,14 +343,42 @@ This file maintains an ongoing record of file changes, terminal commands execute
   2. Caught missing port connection in [harpu_top.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/harpu_top.sv): `.sphere_material(sphere_material)` was added to `raymarch_inst` but omitted from `carve_controller_inst`, leaving the shader material selector unconnected (tied to ground/orange).
   3. Formulated detailed architectural design for "Crosshair + Corner Ticks" reticle overlay in [color_mapper.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/imports/ECE%20385%20Final%20Project/color_mapper.sv).
 * **[USER]** Corrected `begin ... end` in [carve_controller.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/carve_controller.sv), connected `.sphere_material` on `carve_controller_inst` in [harpu_top.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/harpu_top.sv), and implemented reticle overlay logic in [color_mapper.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/imports/ECE%20385%20Final%20Project/color_mapper.sv).
-* **[USER]** Confirmed all features functional: Circle reset, DualSense L1/R1 material switching, and crosshair with corner brackets operating with zero latency on Urbana hardware.
-* **[AGENT]** Formulated checkpoint polish strategy addressing two visual fidelity limitations within pre-demo time budget:
-  1. "Smooth lines" without resolution increase:
-     - Root cause: Nearest-neighbor $2\times$ pixel replication in [color_mapper.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/imports/ECE%20385%20Final%20Project/color_mapper.sv) produces visible $2 \times 2$ block staircases along curved sphere silhouettes.
-     - Solution: Hardware edge anti-aliasing / scanline smoothing in `color_mapper.sv` (running at 25 MHz without touching the 100 MHz raymarcher or BRAM writes).
-  2. 12-bit color banding (Mach banding):
-     - Spatial Bayer / Ordered Dithering ($2 \times 2$ threshold matrix) in [color_mapper.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/imports/ECE%20385%20Final%20Project/color_mapper.sv) or [sphere_shader.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/sphere_shader.sv), simulating 64 brightness steps out of 16-level quantization.
-     - Chromatic gradient enhancements replacing flat grayscale silver with polished metallic Titanium/Cobalt.
+* **[USER]** Reported hardware visual observations from photo:
+  1. Dithering added noise/speckling to certain regions while leaving other bands untreated.
+  2. Anti-aliasing in `color_mapper.sv` did not visually smooth edges.
+* **[AGENT]** Diagnosed root causes:
+  1. Dithering noise & coordinate desynchronization:
+     - Root cause: `sphere_shader_inst` was connected to HDMI raster coordinates `drawX` and `drawY` (25 MHz free-running scanout beam) instead of the actual pixel coordinate of the retired raymarcher slot.
+     - Because raymarching is asynchronous across 16 parallel slots and writes out of order to the framebuffer, sampling `drawX[0]` and `drawY[0]` applies pseudo-random noise to whatever ray retires on that cycle, rather than a coherent 2D spatial grid.
+     - Furthermore, `dither_bias << 2` (+0, +4, +8, +12) spans a full 4-bit band threshold, turning the dithering into high-frequency salt-and-pepper noise.
+* **[USER]** Requested feature audit, update to `Documentation/agents_week_1.md`, and creation of `Documentation/agents_week_2.md` tracking all implemented progress ahead of the Midpoint Checkpoint demo.
+* **[AGENT]** Audited and recorded complete feature ledger:
+  1. Updated [agents_week_1.md](file:///F:/ECE_385_Final_Project/Documentation/agents_week_1.md): Closed out all Step 3 and Step 4 milestones (hardware 3D raymarching bring-up, fixed-point math pipelines, 2x BRAM framebuffer video path).
+  2. Created [agents_week_2.md](file:///F:/ECE_385_Final_Project/Documentation/agents_week_2.md): Codified complete feature suite across RPU Core, Interactive CSG Carving, DualSense Gamepad Integration, Visual Polish/Telemetry HUD, and 3D Spherical Orbital Lighting. Confirmed 100% readiness for Midpoint Checkpoint evaluation.
+
+
+
+
+
+
+
+
+* **[USER]** Proposed 3D spherical orbital coordinates (spherical polar system: Azimuth $\theta$, Elevation $\phi$, Orbit Radius $R$) for both camera and light sources, locked pointing at the sphere origin $(0, 0, 0)$.
+* **[AGENT]** Formulated step-by-step modular implementation plan for 3D Spherical Orbit (Camera, Carver, and Light):
+  1. Module 1: Sine/Cosine Lookup ROM (`lut_sincos.sv`): 256-entry $Q8.8$ sine table producing both $\sin(\theta)$ and $\cos(\theta) = \sin(\theta + 64)$ with zero multiplier overhead.
+  2. Module 2: Enhanced Controller (`carve_controller.sv`): Mode FSM (`MODE_CARVE`, `MODE_CAM`, `MODE_LIGHT`) switched on Square button rising edge; maintains $(\theta, \phi, R)$ accumulators for camera and light.
+  3. Module 3: Dynamic Ray Generator (`ray_gen.sv`): Accepts camera basis vectors $(\vec{U}, \vec{V}, \vec{W})$ and computes world rays $\vec{D} = u\vec{U} + v\vec{V} + f\vec{W}$.
+  4. Module 4: Dynamic Shader (`sphere_shader.sv`): Accepts dynamic unit light direction $\vec{L}$ and dynamic half-vector $\vec{H}$.
+
+
+
+
+
+
+
+
+
+
 
 
 

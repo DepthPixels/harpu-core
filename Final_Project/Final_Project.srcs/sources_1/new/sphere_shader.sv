@@ -3,13 +3,22 @@
 module sphere_shader (
     input  logic               clk,
     input  logic               reset,
+    input  logic               pix_x,
+    input  logic               pix_y,
     input  logic signed [15:0] norm_x,
     input  logic signed [15:0] norm_y,
     input  logic signed [15:0] norm_z,
+    input  logic signed [15:0] light_dir_x,
+    input  logic signed [15:0] light_dir_y,
+    input  logic signed [15:0] light_dir_z,
+    input  logic signed [15:0] half_x,
+    input  logic signed [15:0] half_y,
+    input  logic signed [15:0] half_z,
     input  logic        [1:0]  sphere_material,
     output logic        [11:0] shaded_output
 );
 
+    /*
     // Direction to light source: [0.5, 0.6, -0.625] normalized in Q8.8
     localparam logic signed [15:0] LIGHT_DIR_X = 16'sh0080;
     localparam logic signed [15:0] LIGHT_DIR_Y = 16'sh0099;
@@ -19,6 +28,7 @@ module sphere_shader (
     localparam logic signed [15:0] HALF_X = 16'sh0047; // +0.277
     localparam logic signed [15:0] HALF_Y = 16'sh0055; // +0.333
     localparam logic signed [15:0] HALF_Z = 16'shFF19; // -0.901
+    */
 
     localparam logic [3:0] AMBIENT = 4'd3;
 
@@ -37,12 +47,12 @@ module sphere_shader (
             p_hy <= 32'sd0;
             p_hz <= 32'sd0;
         end else begin
-            p_lx <= 32'(norm_x) * 32'(LIGHT_DIR_X);
-            p_ly <= 32'(norm_y) * 32'(LIGHT_DIR_Y);
-            p_lz <= 32'(norm_z) * 32'(LIGHT_DIR_Z);
-            p_hx <= 32'(norm_x) * 32'(HALF_X);
-            p_hy <= 32'(norm_y) * 32'(HALF_Y);
-            p_hz <= 32'(norm_z) * 32'(HALF_Z);
+            p_lx <= 32'(norm_x) * 32'(light_dir_x);
+            p_ly <= 32'(norm_y) * 32'(light_dir_y);
+            p_lz <= 32'(norm_z) * 32'(light_dir_z);
+            p_hx <= 32'(norm_x) * 32'(half_x);
+            p_hy <= 32'(norm_y) * 32'(half_y);
+            p_hz <= 32'(norm_z) * 32'(half_z);
         end
     end
 
@@ -111,6 +121,7 @@ module sphere_shader (
     assign s4_comb = 16'(s4_mult >>> 8);
 
     logic signed [15:0] st3_dot;
+    logic signed [15:0] st3_dot_dithered;
     logic signed [15:0] st3_s4;
     logic               st3_spec_valid;
 
@@ -137,6 +148,7 @@ module sphere_shader (
     logic        [4:0]  r_add, g_add, b_add, r_sum, g_sum, b_sum;
     logic        [3:0]  r_base, g_base, b_base;
     logic        [3:0]  red, green, blue;
+    logic        [1:0]  dither_bias;
 
     assign s8_mult = 32'(st3_s4) * 32'(st3_s4);
     assign s8_comb = 16'(s8_mult >>> 8);
@@ -148,7 +160,16 @@ module sphere_shader (
             specular = 4'd0;
         end
 
-        diffuse = (st3_dot >= 16'sh0100) ? 4'd15 : ((st3_dot > 16'sh0000) ? st3_dot[7:4] : 4'd0);
+        case ({pix_x, pix_y})
+            2'b00: dither_bias = 2'd0;
+            2'b01: dither_bias = 2'd3;
+            2'b10: dither_bias = 2'd2;
+            2'b11: dither_bias = 2'd1;
+        endcase
+
+        st3_dot_dithered = st3_dot + 16'(dither_bias << 2);
+
+        diffuse = (st3_dot_dithered >= 16'sh0100) ? 4'd15 : ((st3_dot_dithered > 16'sh0000) ? st3_dot_dithered[7:4] : 4'd0);
 
         r_add = 5'b0;
         g_add = 5'b0;

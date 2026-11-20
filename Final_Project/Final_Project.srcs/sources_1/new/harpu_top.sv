@@ -67,10 +67,12 @@ module harpu_top (
         .hex_grid(hex_gridA)
     );
 
+    logic [1:0] control_mode;
+
     hex_driver HexB (
         .clk(Clk),
         .reset(reset_ah),
-        .in({carve_x[7:4], carve_x[3:0], keycode0_gpio[7:4], keycode0_gpio[3:0]}),
+        .in({(control_mode == 2'b10) ? 4'hC : (control_mode == 2'b01) ? 4'hB : 4'hA, 4'b0, keycode0_gpio[7:4], keycode0_gpio[3:0]}),
         .hex_seg(hex_segB),
         .hex_grid(hex_gridB)
     );
@@ -136,6 +138,8 @@ module harpu_top (
     end
 
     logic [1:0] sphere_material;
+    logic signed [15:0] light_dir_x, light_dir_y, light_dir_z;
+    logic signed [15:0] half_x, half_y, half_z;
 
     raymarch_core raymarch_inst (
         .clk(Clk),
@@ -146,6 +150,12 @@ module harpu_top (
         .carve_x(carve_x),
         .carve_y(carve_y),
         .carve_z(carve_z),
+        .light_dir_x(light_dir_x),
+        .light_dir_y(light_dir_y),
+        .light_dir_z(light_dir_z),
+        .half_x(half_x),
+        .half_y(half_y),
+        .half_z(half_z),
         .carve_radius(carve_radius),
         .fb_addr(fb_addr_a),
         .fb_din(fb_din_a),
@@ -163,9 +173,16 @@ module harpu_top (
         .carve_x(carve_x),
         .carve_y(carve_y),
         .carve_z(carve_z),
+        .light_dir_x(light_dir_x),
+        .light_dir_y(light_dir_y),
+        .light_dir_z(light_dir_z),
+        .half_x(half_x),
+        .half_y(half_y),
+        .half_z(half_z),
         .carve_radius(carve_radius),
         .carve_en(carve_en),
         .sphere_material(sphere_material),
+        .control_mode(control_mode),
         .inv_carve_radius(inv_carve_radius)
     );
 

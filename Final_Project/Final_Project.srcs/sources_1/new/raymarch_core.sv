@@ -10,6 +10,12 @@ module raymarch_core (
     input  logic signed [15:0] carve_x,
     input  logic signed [15:0] carve_y,
     input  logic signed [15:0] carve_z,
+    input  logic signed [15:0] light_dir_x,
+    input  logic signed [15:0] light_dir_y,
+    input  logic signed [15:0] light_dir_z,
+    input  logic signed [15:0] half_x,
+    input  logic signed [15:0] half_y,
+    input  logic signed [15:0] half_z,
     input  logic signed [15:0] carve_radius,
     input  logic signed [15:0] inv_carve_radius,
     input  logic        [1:0]  sphere_material,
@@ -123,6 +129,9 @@ module raymarch_core (
     logic signed [15:0] s0_pos_x, s0_pos_y, s0_pos_z;
     logic signed [15:0] s0_d_diff;
 
+    logic s0_pix_x;
+    logic s0_pix_y;
+
     // Stage 1 CSG Normal Delay Registers (decouples Carve Normal DSP from CSG Blend DSP)
     logic signed [15:0] s1_norm_carve_x, s1_norm_carve_y, s1_norm_carve_z;
     logic signed [15:0] s1_norm_sphere_x, s1_norm_sphere_y, s1_norm_sphere_z;
@@ -132,11 +141,17 @@ module raymarch_core (
     logic               s1_retire_is_hit;
     logic [16:0]        s1_retire_addr;
 
+    logic s1_pix_x;
+    logic s1_pix_y;
+
     // Shading Pipeline Stage 2 Registers (between CSG Blend & Sphere Shader)
     logic signed [15:0] pipe_norm_x, pipe_norm_y, pipe_norm_z;
     logic        [16:0] pipe_addr;
     logic               pipe_is_hit;
     logic               pipe_we;
+
+    logic pipe_pix_x;
+    logic pipe_pix_y;
 
     // Retire Shading Pipeline Delay Registers (aligning with sphere_shader 4-cycle latency)
     logic        pipe_we_r   [1:4];
@@ -300,6 +315,8 @@ module raymarch_core (
             s1_retire_we     <= s0_retire_we;
             s1_retire_is_hit <= s0_retire_is_hit;
             s1_retire_addr   <= s0_retire_addr;
+            s1_pix_x         <= s0_pix_x;
+            s1_pix_y         <= s0_pix_y;
 
             // Stage 2 CSG Normal Pipeline Registers (Analytical Normal Blend into Shader)
             pipe_we     <= s1_retire_we;
@@ -308,6 +325,8 @@ module raymarch_core (
             pipe_norm_x <= norm_x;
             pipe_norm_y <= norm_y;
             pipe_norm_z <= norm_z;
+            pipe_pix_x  <= s1_pix_x;
+            pipe_pix_y  <= s1_pix_y;
 
             // Default stage 0 retire write enable
             s0_retire_we <= 1'b0;
@@ -325,6 +344,8 @@ module raymarch_core (
                     s0_retire_addr   <= ({1'b0, slot_render_y[ray_tag_out], 8'b0} + 
                                          {3'b0, slot_render_y[ray_tag_out], 6'b0}) + 
                                          {8'b0, slot_render_x[ray_tag_out]};
+                    s0_pix_x         <= slot_render_x[ray_tag_out][0];
+                    s0_pix_y         <= slot_render_y[ray_tag_out][0];
                 end
                 else if (ray_t[ray_tag_out] > ray_t_max || step_cnt[ray_tag_out] > 16'sd24) begin
                     // Background Miss: Retire slot, flag as background
@@ -452,8 +473,16 @@ module raymarch_core (
         .norm_x(pipe_norm_x),
         .norm_y(pipe_norm_y),
         .norm_z(pipe_norm_z),
+        .light_dir_x(light_dir_x),
+        .light_dir_y(light_dir_y),
+        .light_dir_z(light_dir_z),
+        .half_x(half_x),
+        .half_y(half_y),
+        .half_z(half_z),
         .sphere_material(sphere_material),
-        .shaded_output(shaded_output)
+        .shaded_output(shaded_output),
+        .pix_x(pipe_pix_x),
+        .pix_y(pipe_pix_y)
     );
 
 endmodule
