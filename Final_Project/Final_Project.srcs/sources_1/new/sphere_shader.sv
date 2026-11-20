@@ -22,22 +22,42 @@ module sphere_shader (
     localparam logic [3:0] AMBIENT = 4'd3;
 
     // -------------------------------------------------------------
-    // Stage 1: Dot Products (N . L and N . H)
+    // Stage 1A: Component Multiplications in Parallel (6 independent un-cascaded DSPs)
     // -------------------------------------------------------------
-    logic signed [31:0] dp_full;
-    logic signed [31:0] hdp_full;
+    logic signed [31:0] p_lx, p_ly, p_lz;
+    logic signed [31:0] p_hx, p_hy, p_hz;
+
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            p_lx <= 32'sd0;
+            p_ly <= 32'sd0;
+            p_lz <= 32'sd0;
+            p_hx <= 32'sd0;
+            p_hy <= 32'sd0;
+            p_hz <= 32'sd0;
+        end else begin
+            p_lx <= 32'(norm_x) * 32'(LIGHT_DIR_X);
+            p_ly <= 32'(norm_y) * 32'(LIGHT_DIR_Y);
+            p_lz <= 32'(norm_z) * 32'(LIGHT_DIR_Z);
+            p_hx <= 32'(norm_x) * 32'(HALF_X);
+            p_hy <= 32'(norm_y) * 32'(HALF_Y);
+            p_hz <= 32'(norm_z) * 32'(HALF_Z);
+        end
+    end
+
+    // -------------------------------------------------------------
+    // Stage 1B: Fast Adder Tree Sum and Clamping into Stage 1 Registers
+    // -------------------------------------------------------------
+    logic signed [31:0] dp_sum;
+    logic signed [31:0] hdp_sum;
     logic signed [15:0] dp_comb;
     logic signed [15:0] hdp_comb;
 
-    assign dp_full  = 32'(norm_x) * 32'(LIGHT_DIR_X) + 
-                      32'(norm_y) * 32'(LIGHT_DIR_Y) + 
-                      32'(norm_z) * 32'(LIGHT_DIR_Z);
-    assign hdp_full = 32'(norm_x) * 32'(HALF_X) + 
-                      32'(norm_y) * 32'(HALF_Y) + 
-                      32'(norm_z) * 32'(HALF_Z);
+    assign dp_sum  = p_lx + p_ly + p_lz;
+    assign hdp_sum = p_hx + p_hy + p_hz;
 
-    assign dp_comb  = 16'(dp_full >>> 8);
-    assign hdp_comb = 16'(hdp_full >>> 8);
+    assign dp_comb  = 16'(dp_sum >>> 8);
+    assign hdp_comb = 16'(hdp_sum >>> 8);
 
     logic signed [15:0] st1_dot;
     logic signed [15:0] st1_half;

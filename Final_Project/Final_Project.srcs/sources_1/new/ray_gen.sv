@@ -107,19 +107,10 @@ module ray_gen (
         end
     end
 
-    // Stage 4 of pipeline: Vector Magnitude
-
-    // Lookup table output unsigned Q0.16
+    // Stage 4A of pipeline: Inverse Sqrt Table Lookup
     logic [15:0] lut_outa;
     logic [15:0] lut_outa_next;
-    logic [15:0] lut_out;
     logic [5:0]  lut_addr;
-    logic signed [15:0] r4_dx, r4_dy, r4_dz;
-    logic [15:0] r4_inv_norm;
-
-    logic        r4_valid;
-
-    assign lut_out = lut_outa - 16'(((32'(lut_outa - lut_outa_next) * 32'({12'd0, r3_S[3:0]})) >> 4));
 
     always_comb begin: INVERSE_SQRT_CALC
         if (r3_S <= 16'sd576)
@@ -137,31 +128,64 @@ module ray_gen (
         .douta_next(lut_outa_next)
     );
 
-    always_ff @(posedge clk or posedge reset) begin: INVERSE_SQRT_REGS
+    // Stage 4A Pipeline Registers
+    logic [15:0]        r4a_base;
+    logic signed [15:0] r4a_diff;
+    logic [3:0]         r4a_frac;
+    logic signed [15:0] r4a_dx, r4a_dy, r4a_dz;
+    logic               r4a_valid;
+
+    always_ff @(posedge clk or posedge reset) begin: STAGE_4A_REGS
         if (reset) begin
-            r4_dx <= 16'd0;
-            r4_dy <= 16'd0;
-            r4_dz <= 16'd0;
-            r4_inv_norm <= 16'd0;
-            r4_valid <= 1'd0;
+            r4a_base  <= 16'd0;
+            r4a_diff  <= 16'sd0;
+            r4a_frac  <= 4'd0;
+            r4a_dx    <= 16'sd0;
+            r4a_dy    <= 16'sd0;
+            r4a_dz    <= 16'sd0;
+            r4a_valid <= 1'b0;
+        end else begin
+            r4a_base  <= lut_outa;
+            r4a_diff  <= 16'($signed(lut_outa) - $signed(lut_outa_next));
+            r4a_frac  <= r3_S[3:0];
+            r4a_dx    <= r3_dx;
+            r4a_dy    <= r3_dy;
+            r4a_dz    <= r3_dz;
+            r4a_valid <= r3_valid;
         end
-        else begin
-            r4_dx <= r3_dx;
-            r4_dy <= r3_dy;
-            r4_dz <= r3_dz;
-            r4_inv_norm <= lut_out;
-            r4_valid <= r3_valid;
+    end
+
+    // Stage 4B of pipeline: Linear Interpolation Multiplier
+    logic [15:0]        interp_inv_norm;
+    logic signed [15:0] r4b_dx, r4b_dy, r4b_dz;
+    logic [15:0]        r4b_inv_norm;
+    logic               r4b_valid;
+
+    assign interp_inv_norm = r4a_base - 16'(((32'(r4a_diff) * 32'({12'd0, r4a_frac})) >> 4));
+
+    always_ff @(posedge clk or posedge reset) begin: STAGE_4B_REGS
+        if (reset) begin
+            r4b_dx       <= 16'sd0;
+            r4b_dy       <= 16'sd0;
+            r4b_dz       <= 16'sd0;
+            r4b_inv_norm <= 16'd0;
+            r4b_valid    <= 1'b0;
+        end else begin
+            r4b_dx       <= r4a_dx;
+            r4b_dy       <= r4a_dy;
+            r4b_dz       <= r4a_dz;
+            r4b_inv_norm <= interp_inv_norm;
+            r4b_valid    <= r4a_valid;
         end
     end
 
     // Stage 5 of pipeline: Normalized Direction Vector
-
     logic signed [15:0] d_hat_x, d_hat_y, d_hat_z;
 
     always_comb begin: NORMALIZE_DIRECTION
-        d_hat_x = 16'((32'(r4_dx) * 32'($signed({1'b0, r4_inv_norm}))) >>> 16);
-        d_hat_y = 16'((32'(r4_dy) * 32'($signed({1'b0, r4_inv_norm}))) >>> 16);
-        d_hat_z = 16'((32'(r4_dz) * 32'($signed({1'b0, r4_inv_norm}))) >>> 16);
+        d_hat_x = 16'((32'(r4b_dx) * 32'($signed({1'b0, r4b_inv_norm}))) >>> 16);
+        d_hat_y = 16'((32'(r4b_dy) * 32'($signed({1'b0, r4b_inv_norm}))) >>> 16);
+        d_hat_z = 16'((32'(r4b_dz) * 32'($signed({1'b0, r4b_inv_norm}))) >>> 16);
     end
 
     always_ff @(posedge clk or posedge reset) begin: NORMALIZED_DIRECTION_REGS
@@ -175,7 +199,7 @@ module ray_gen (
             ray_dir_x <= d_hat_x;
             ray_dir_y <= d_hat_y;
             ray_dir_z <= d_hat_z;
-            ray_valid <= r4_valid;
+            ray_valid <= r4b_valid;
         end
     end
 

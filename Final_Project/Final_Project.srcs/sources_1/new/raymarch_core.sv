@@ -46,13 +46,13 @@ module raymarch_core (
     logic signed [15:0] ray_dir_z [0:15];
     logic               ray_in_valid;
     logic               ray_valid;
-    logic        [8:0]  ray_x_pipe [0:4];
-    logic        [7:0]  ray_y_pipe [0:4];
+    logic        [8:0]  ray_x_pipe [0:5];
+    logic        [7:0]  ray_y_pipe [0:5];
     logic        [8:0]  ray_x_aligned;
     logic        [7:0]  ray_y_aligned;
 
-    assign ray_x_aligned = ray_x_pipe[4];
-    assign ray_y_aligned = ray_y_pipe[4];
+    assign ray_x_aligned = ray_x_pipe[5];
+    assign ray_y_aligned = ray_y_pipe[5];
 
     // Camera Origin at (0, 0, -2.5)
     logic signed [15:0] origin_x = 16'sh0000;
@@ -76,8 +76,7 @@ module raymarch_core (
     logic               hit_carve;
     logic               is_carve_reg;
 
-    logic        [8:0]  blend_w;
-    logic        [8:0]  blend_w_reg;
+    logic signed [15:0] sdf_d_diff;
     logic        [11:0] shaded_output;
 
     // Pipelining stuff
@@ -121,18 +120,27 @@ module raymarch_core (
     logic               s0_retire_is_hit;
     logic [16:0]        s0_retire_addr;
     logic signed [15:0] s0_pos_x, s0_pos_y, s0_pos_z;
-    logic [8:0]         s0_blend_w;
+    logic signed [15:0] s0_d_diff;
 
-    // Shading Pipeline Stage 1 Registers (between SDF Scene & Sphere Shader)
+    // Stage 1 CSG Normal Delay Registers (decouples Carve Normal DSP from CSG Blend DSP)
+    logic signed [15:0] s1_norm_carve_x, s1_norm_carve_y, s1_norm_carve_z;
+    logic signed [15:0] s1_norm_sphere_x, s1_norm_sphere_y, s1_norm_sphere_z;
+    logic [8:0]         s1_blend_w;
+    logic [8:0]         stage1_blend_w;
+    logic               s1_retire_we;
+    logic               s1_retire_is_hit;
+    logic [16:0]        s1_retire_addr;
+
+    // Shading Pipeline Stage 2 Registers (between CSG Blend & Sphere Shader)
     logic signed [15:0] pipe_norm_x, pipe_norm_y, pipe_norm_z;
     logic        [16:0] pipe_addr;
     logic               pipe_is_hit;
     logic               pipe_we;
 
-    // Retire Shading Pipeline Delay Registers (aligning with sphere_shader 3-cycle latency)
-    logic        pipe_we_r   [1:3];
-    logic [16:0] pipe_addr_r [1:3];
-    logic        pipe_hit_r  [1:3];
+    // Retire Shading Pipeline Delay Registers (aligning with sphere_shader 4-cycle latency)
+    logic        pipe_we_r   [1:4];
+    logic [16:0] pipe_addr_r [1:4];
+    logic        pipe_hit_r  [1:4];
 
     logic can_feed;
     assign can_feed = (fifo_count <= 5'd10) && (pixels_fed < 17'd76800);
@@ -152,7 +160,17 @@ module raymarch_core (
             s0_pos_x          <= 16'sh0000;
             s0_pos_y          <= 16'sh0000;
             s0_pos_z          <= 16'sh0000;
-            s0_blend_w        <= 9'd0;
+            s0_d_diff         <= 16'sh0000;
+            s1_norm_carve_x   <= 16'sh0000;
+            s1_norm_carve_y   <= 16'sh0000;
+            s1_norm_carve_z   <= 16'sh0000;
+            s1_norm_sphere_x  <= 16'sh0000;
+            s1_norm_sphere_y  <= 16'sh0000;
+            s1_norm_sphere_z  <= 16'sh0000;
+            s1_blend_w        <= 9'd0;
+            s1_retire_we      <= 1'b0;
+            s1_retire_is_hit  <= 1'b0;
+            s1_retire_addr    <= 17'd0;
             pipe_we           <= 1'b0;
             pipe_is_hit       <= 1'b0;
             pipe_addr         <= 17'd0;
@@ -162,7 +180,7 @@ module raymarch_core (
             fb_we             <= 1'b0;
             fb_din            <= 12'd0;
             fb_addr           <= 17'd0;
-            for (int i = 1; i <= 3; i++) begin
+            for (int i = 1; i <= 4; i++) begin
                 pipe_we_r[i]   <= 1'b0;
                 pipe_addr_r[i] <= 17'd0;
                 pipe_hit_r[i]  <= 1'b0;
@@ -172,8 +190,6 @@ module raymarch_core (
             pos_x             <= origin_x;
             pos_y             <= origin_y;
             pos_z             <= origin_z;
-            is_carve_reg      <= 1'b0;
-            blend_w_reg       <= 9'd0;
             issue_ptr         <= 4'd0;
             slot_active       <= 16'd0;
             pixel_spawn_count <= 17'd0;
@@ -185,7 +201,7 @@ module raymarch_core (
         end else begin
             issue_ptr <= issue_ptr + 4'd1;
 
-            // Retire Shading Pipeline Delay: align with sphere_shader 3-cycle latency
+            // Retire Shading Pipeline Delay: align with sphere_shader 4-cycle latency
             pipe_we_r[1]   <= pipe_we;
             pipe_addr_r[1] <= pipe_addr;
             pipe_hit_r[1]  <= pipe_is_hit;
@@ -198,10 +214,14 @@ module raymarch_core (
             pipe_addr_r[3] <= pipe_addr_r[2];
             pipe_hit_r[3]  <= pipe_hit_r[2];
 
-            // Framebuffer writeback at Stage 4 (coincident with valid shaded_output)
-            fb_we   <= pipe_we_r[3];
-            fb_addr <= pipe_addr_r[3];
-            fb_din  <= pipe_hit_r[3] ? shaded_output : 12'h112;
+            pipe_we_r[4]   <= pipe_we_r[3];
+            pipe_addr_r[4] <= pipe_addr_r[3];
+            pipe_hit_r[4]  <= pipe_hit_r[3];
+
+            // Framebuffer writeback at Stage 5 (coincident with valid shaded_output)
+            fb_we   <= pipe_we_r[4];
+            fb_addr <= pipe_addr_r[4];
+            fb_din  <= pipe_hit_r[4] ? shaded_output : 12'h112;
 
             // FIFO Stuff
             if (can_feed == 1) begin
@@ -268,10 +288,22 @@ module raymarch_core (
                 end
             end
 
-            // Normal Calculation Pipeline Register (between Hit Detection & Shader)
-            pipe_we     <= s0_retire_we;
-            pipe_is_hit <= s0_retire_is_hit;
-            pipe_addr   <= s0_retire_addr;
+            // Stage 1 CSG Normal Pipeline Registers (Carve Normal & Coordinate Forwarding)
+            s1_norm_carve_x  <= norm_carve_x;
+            s1_norm_carve_y  <= norm_carve_y;
+            s1_norm_carve_z  <= norm_carve_z;
+            s1_norm_sphere_x <= s0_pos_x;
+            s1_norm_sphere_y <= s0_pos_y;
+            s1_norm_sphere_z <= s0_pos_z;
+            s1_blend_w       <= stage1_blend_w;
+            s1_retire_we     <= s0_retire_we;
+            s1_retire_is_hit <= s0_retire_is_hit;
+            s1_retire_addr   <= s0_retire_addr;
+
+            // Stage 2 CSG Normal Pipeline Registers (Analytical Normal Blend into Shader)
+            pipe_we     <= s1_retire_we;
+            pipe_is_hit <= s1_retire_is_hit;
+            pipe_addr   <= s1_retire_addr;
             pipe_norm_x <= norm_x;
             pipe_norm_y <= norm_y;
             pipe_norm_z <= norm_z;
@@ -288,7 +320,7 @@ module raymarch_core (
                     s0_pos_x         <= pos_x_out;
                     s0_pos_y         <= pos_y_out;
                     s0_pos_z         <= pos_z_out;
-                    s0_blend_w       <= blend_w;
+                    s0_d_diff        <= sdf_d_diff;
                     s0_retire_addr   <= ({1'b0, slot_render_y[ray_tag_out], 8'b0} + 
                                          {3'b0, slot_render_y[ray_tag_out], 6'b0}) + 
                                          {8'b0, slot_render_x[ray_tag_out]};
@@ -301,7 +333,7 @@ module raymarch_core (
                     s0_pos_x         <= 16'sh0000;
                     s0_pos_y         <= 16'sh0000;
                     s0_pos_z         <= 16'sh0000;
-                    s0_blend_w       <= 9'd0;
+                    s0_d_diff        <= 16'sh0000;
                     s0_retire_addr   <= ({1'b0, slot_render_y[ray_tag_out], 8'b0} + 
                                          {3'b0, slot_render_y[ray_tag_out], 6'b0}) + 
                                          {8'b0, slot_render_x[ray_tag_out]};
@@ -319,8 +351,6 @@ module raymarch_core (
     logic signed [15:0] c_diff_x, c_diff_y, c_diff_z;
     logic signed [31:0] ext_diff_x, ext_diff_y, ext_diff_z;
     logic signed [31:0] ext_inv_radius;
-    logic signed [15:0] weight_sphere;
-    logic signed [15:0] weight_carve;
 
     assign c_diff_x = carve_x - s0_pos_x;
     assign c_diff_y = carve_y - s0_pos_y;
@@ -331,27 +361,38 @@ module raymarch_core (
     assign ext_diff_z = {{16{c_diff_z[15]}}, c_diff_z};
     assign ext_inv_radius = {{16{inv_carve_radius[15]}}, inv_carve_radius};
 
-    assign weight_sphere = 16'($signed({1'b0, 9'd256 - s0_blend_w}));
-    assign weight_carve  = 16'($signed({1'b0, s0_blend_w}));
+    logic signed [31:0] ext_d_diff;
+    logic signed [15:0] stage1_d_rel;
+
+    assign ext_d_diff = {{16{s0_d_diff[15]}}, s0_d_diff};
+    assign stage1_d_rel = 16'((ext_d_diff * ext_inv_radius) >>> 8);
 
     always_comb begin
-        norm_sphere_x = s0_pos_x;
-        norm_sphere_y = s0_pos_y;
-        norm_sphere_z = s0_pos_z;
+        if (!carve_en || stage1_d_rel[15] == 1'b1) begin
+            stage1_blend_w = 9'd0;    // Pure sphere (outside hole)
+        end else if (stage1_d_rel >= 16'sh0080) begin
+            stage1_blend_w = 9'd256;  // Pure crater interior
+        end else begin
+            stage1_blend_w = 9'((32'(stage1_d_rel)) << 1); // Gentle, smooth bleed into bevel
+        end
+    end
 
+    always_comb begin
+        // Stage 1 CSG Carve Normal (1 DSP48E1 slice, ~4.0 ns)
         norm_carve_x = 16'((ext_diff_x * ext_inv_radius) >>> 8);
         norm_carve_y = 16'((ext_diff_y * ext_inv_radius) >>> 8);
         norm_carve_z = 16'((ext_diff_z * ext_inv_radius) >>> 8);
 
-        // Continuous signed normal blend (analytical CSG gradient)
-        norm_x = 16'((32'(norm_sphere_x) * 32'(weight_sphere) + 32'(norm_carve_x) * 32'(weight_carve)) >>> 8);
-        norm_y = 16'((32'(norm_sphere_y) * 32'(weight_sphere) + 32'(norm_carve_y) * 32'(weight_carve)) >>> 8);
-        norm_z = 16'((32'(norm_sphere_z) * 32'(weight_sphere) + 32'(norm_carve_z) * 32'(weight_carve)) >>> 8);
+        // Stage 2 Continuous Signed Analytical CSG Gradient Blend (Single DSP Multiply-Add, ~3.5 ns)
+        // N_blend = N_sphere + ((N_carve - N_sphere) * w) >>> 8
+        norm_x = s1_norm_sphere_x + 16'((32'(s1_norm_carve_x - s1_norm_sphere_x) * 32'($signed({1'b0, s1_blend_w}))) >>> 8);
+        norm_y = s1_norm_sphere_y + 16'((32'(s1_norm_carve_y - s1_norm_sphere_y) * 32'($signed({1'b0, s1_blend_w}))) >>> 8);
+        norm_z = s1_norm_sphere_z + 16'((32'(s1_norm_carve_z - s1_norm_sphere_z) * 32'($signed({1'b0, s1_blend_w}))) >>> 8);
     end
 
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
-            for (int i = 0; i < 5; i++) begin
+            for (int i = 0; i < 6; i++) begin
                 ray_x_pipe[i] <= 9'b0;
                 ray_y_pipe[i] <= 8'b0;
             end
@@ -360,8 +401,8 @@ module raymarch_core (
             ray_x_pipe[0] <= gen_x;
             ray_y_pipe[0] <= gen_y;
 
-            // Stages 1 to 11 register updates
-            for (int i = 1; i < 5; i++) begin
+            // Stages 1 to 5 register updates (aligned with 6-cycle ray_gen latency)
+            for (int i = 1; i < 6; i++) begin
                 ray_x_pipe[i] <= ray_x_pipe[i-1];
                 ray_y_pipe[i] <= ray_y_pipe[i-1];
             end
@@ -399,7 +440,7 @@ module raymarch_core (
         .dist_out(sdf_dist),
         .out_valid(sdf_valid),
         .hit_carve(hit_carve),
-        .blend_w(blend_w),
+        .d_diff(sdf_d_diff),
         .ray_tag_in(ray_tag_in),
         .ray_tag_out(ray_tag_out)
     );
