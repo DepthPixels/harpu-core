@@ -119,19 +119,41 @@ module carve_controller(
     // Elevation
     logic signed [7:0] phi_light;
     logic signed [15:0] sin_theta_light, cos_theta_light, sin_phi_light, cos_phi_light;
+    logic signed [15:0] r_sin_theta_light, r_cos_theta_light, r_sin_phi_light, r_cos_phi_light;
+    logic signed [15:0] r_delta_x, r_delta_y, r_delta2_x, r_delta2_y;
+    logic               r_mouse_packet_pulse;
 
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
-            light_dir_x <= 16'sh0000;
-            light_dir_y <= 16'sh0000;
-            light_dir_z <= 16'sh0000;
-            half_x <= 16'sh0000;
-            half_y <= 16'sh0000;
-            half_z <= 16'sh0000;
+            r_sin_theta_light    <= 16'sh0000;
+            r_cos_theta_light    <= 16'sh0100;
+            r_sin_phi_light      <= 16'sh0000;
+            r_cos_phi_light      <= 16'sh0100;
+            r_delta_x            <= 16'sh0000;
+            r_delta_y            <= 16'sh0000;
+            r_delta2_x           <= 16'sh0000;
+            r_delta2_y           <= 16'sh0000;
+            r_mouse_packet_pulse <= 1'b0;
+            light_dir_x          <= 16'sh0000;
+            light_dir_y          <= 16'sh0000;
+            light_dir_z          <= 16'sh0000;
+            half_x               <= 16'sh0000;
+            half_y               <= 16'sh0000;
+            half_z               <= 16'sh0000;
         end else begin
-            light_dir_x <= 16'((32'(cos_phi_light) * 32'(sin_theta_light)) >>> 8);
-            light_dir_y <= sin_phi_light;
-            light_dir_z <= -16'((32'(cos_phi_light) * 32'(cos_theta_light)) >>> 8);
+            r_sin_theta_light    <= sin_theta_light;
+            r_cos_theta_light    <= cos_theta_light;
+            r_sin_phi_light      <= sin_phi_light;
+            r_cos_phi_light      <= cos_phi_light;
+            r_delta_x            <= delta_x;
+            r_delta_y            <= delta_y;
+            r_delta2_x           <= delta2_x;
+            r_delta2_y           <= delta2_y;
+            r_mouse_packet_pulse <= mouse_packet_pulse;
+
+            light_dir_x <= 16'((32'(r_cos_phi_light) * 32'(r_sin_theta_light)) >>> 8);
+            light_dir_y <= r_sin_phi_light;
+            light_dir_z <= -16'((32'(r_cos_phi_light) * 32'(r_cos_theta_light)) >>> 8);
 
             half_x <= (light_dir_x) >>> 1;
             half_y <= (light_dir_y) >>> 1;
@@ -160,10 +182,10 @@ module carve_controller(
         dz_mag_rs_x = (mag_rs_x > deadzone_threshold) ? (mag_rs_x - deadzone_threshold) : 16'sd0;
         dz_mag_rs_y = (mag_rs_y > deadzone_threshold) ? (mag_rs_y - deadzone_threshold) : 16'sd0;
 
-        step_ls_x = dz_mag_ls_x >> 6;
-        step_ls_y = dz_mag_ls_y >> 6;
-        step_rs_x = dz_mag_rs_x >> 6;
-        step_rs_y = dz_mag_rs_y >> 6;
+        step_ls_x = dz_mag_ls_x >>> 6;
+        step_ls_y = dz_mag_ls_y >>> 6;
+        step_rs_x = dz_mag_rs_x >>> 6;
+        step_rs_y = dz_mag_rs_y >>> 6;
 
         if (is_gamepad) begin
             delta_x  = (diff_ls_x < 16'sd0) ? (-step_ls_x) : step_ls_x;
@@ -171,8 +193,8 @@ module carve_controller(
             delta2_x = (diff_rs_x < 16'sd0) ? (-step_rs_x) : step_rs_x;
             delta2_y = (diff_rs_y < 16'sd0) ? (-step_rs_y) : step_rs_y;
         end else if (is_mouse) begin
-            delta_x = { {8{mouse_kbd_stick_data[7]}}, mouse_kbd_stick_data[7:0] };
-            delta_y = { {8{mouse_kbd_stick_data[15]}}, mouse_kbd_stick_data[15:8] };
+            delta_x = $signed({ {8{mouse_kbd_stick_data[7]}}, mouse_kbd_stick_data[7:0] });
+            delta_y = $signed({ {8{mouse_kbd_stick_data[15]}}, mouse_kbd_stick_data[15:8] });
         end
     end
     
@@ -183,8 +205,8 @@ module carve_controller(
         inv_rom[0] = 16'sh7FFF;
         inv_rom[1] = 16'sh7FFF;
         inv_rom[2] = 16'sh7FFF;
-        for (int i = 3; i < 256; i++) begin
-            inv_rom[i] = 16'(32'd65536 / i);
+        for (int unsigned i = 3; i < 256; i++) begin
+            inv_rom[i] = $signed(16'(32'd65536 / i));
         end
     end
 
@@ -234,20 +256,20 @@ module carve_controller(
                         if (triangle_button && !prev_triangle_button) // Rising Edge
                             carve_en <= ~carve_en;
 
-                        if ((carve_radius + delta2_x) >= 16'sh001A && (carve_radius + delta2_x) <= 16'sh00DA) // Bounding for inv
-                            carve_radius <= carve_radius + delta2_x;
+                        if ((carve_radius + r_delta2_x) >= 16'sh001A && (carve_radius + r_delta2_x) <= 16'sh00DA) // Bounding for inv
+                            carve_radius <= carve_radius + r_delta2_x;
 
-                        if ((carve_x + delta_x) >= -16'sh015A && (carve_x + delta_x) <= 16'sh015A) // Bounding for x
-                            carve_x <= carve_x + delta_x;
+                        if ((carve_x + r_delta_x) >= -16'sh015A && (carve_x + r_delta_x) <= 16'sh015A) // Bounding for x
+                            carve_x <= carve_x + r_delta_x;
 
-                        if ((carve_y - delta_y) >= -16'sh015A && (carve_y - delta_y) <= 16'sh015A) // Bounding for y
-                            carve_y <= carve_y - delta_y;
+                        if ((carve_y - r_delta_y) >= -16'sh015A && (carve_y - r_delta_y) <= 16'sh015A) // Bounding for y
+                            carve_y <= carve_y - r_delta_y;
 
-                        if ((carve_z - delta2_y) >= -16'sh015A && (carve_z - delta2_y) <= 16'sh015A) // Bounding for z
-                            carve_z <= carve_z - delta2_y;
+                        if ((carve_z - r_delta2_y) >= -16'sh015A && (carve_z - r_delta2_y) <= 16'sh015A) // Bounding for z
+                            carve_z <= carve_z - r_delta2_y;
                     end else if (control_mode == 2'b01) begin
-                        theta_light <= theta_light + delta_x;
-                        phi_light <= phi_light + delta_y;
+                        theta_light <= theta_light + $unsigned(r_delta_x[7:0]);
+                        phi_light <= phi_light + $signed(r_delta_y[7:0]);
                     end
                         // Change Sphere Material
                         if (l_shoulder_button && !prev_l_shoulder_button) // Rising Edge
@@ -258,23 +280,23 @@ module carve_controller(
                 end
             end
         end else if (is_mouse) begin
-            if (mouse_packet_pulse) begin
+            if (r_mouse_packet_pulse) begin
                 prev_left_btn <= left_btn;
 
                 if (left_btn && !prev_left_btn) // Rising Edge
                     carve_en <= ~carve_en;
 
                 if (right_btn)
-                    carve_z <= carve_z + delta_y;
+                    carve_z <= carve_z + r_delta_y;
 
                 else if (middle_btn) begin
-                    if ((carve_radius - delta_y) >= 16'sh001A && (carve_radius - delta_y) <= 16'sh00DA) // Bounding for inv
-                        carve_radius <= carve_radius - delta_y;
+                    if ((carve_radius - r_delta_y) >= 16'sh001A && (carve_radius - r_delta_y) <= 16'sh00DA) // Bounding for inv
+                        carve_radius <= carve_radius - r_delta_y;
                 end
 
                 else begin
-                    carve_x <= carve_x + delta_x;
-                    carve_y <= carve_y - delta_y;
+                    carve_x <= carve_x + r_delta_x;
+                    carve_y <= carve_y - r_delta_y;
                 end
             end
         end else if (tick_pulse) begin
@@ -346,7 +368,7 @@ module carve_controller(
     );
 
     lut_sincos sincos_inst2 (
-        .theta(phi_light),
+        .theta($unsigned(phi_light)),
         .sin_out(sin_phi_light),
         .cos_out(cos_phi_light)
     );

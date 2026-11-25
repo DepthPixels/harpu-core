@@ -13,7 +13,9 @@ SRCS = sim_top.sv \
        $(HDL_DIR)/math_sqrt.sv \
        $(HDL_DIR)/sphere_shader.sv \
        $(HDL_DIR)/ray_gen.sv \
-       $(HDL_DIR)/lut_inv_sqrt.sv
+       $(HDL_DIR)/lut_inv_sqrt.sv \
+       $(HDL_DIR)/lut_sincos.sv \
+       $(HDL_DIR)/vec3_normalize.sv
 
 CPP_SRC = sim_main.cpp
 

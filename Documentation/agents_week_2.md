@@ -101,16 +101,41 @@
   2. Live USB HID PS5 DualSense controller streaming analog translation, depth, and radius controls over GPIO.
   3. Real-time CSG boolean carving with smooth analytical normal interpolation.
   4. Dynamic orbital directional lighting orbiting the 3D geometry in real time.
-  5. Scanout reticle overlay, 4-material palette switcher, and hardware FPS display.
+  5. 24-bit TrueColor display output (8 bits per channel) eliminating banding on smooth surfaces.
+  6. Scanout reticle overlay, 4-material palette switcher, and hardware FPS display.
 * **Midpoint Checkpoint Readiness:** **100% READY FOR DEMO**.
 
 ---
 
-## 4. Post-Checkpoint Roadmap (Week 3 & Beyond)
+## 4. Post-Implementation Utilization & Timing Summary
 
-1. **Full 3D Orbital Camera:**
-   - Connect camera yaw/pitch angles to primary ray direction rotator in `ray_gen.sv` to orbit the viewpoint completely around the carved model.
-2. **24-Bit TrueColor Framebuffer Upgrade:**
-   - Expand on-chip BRAM width from 12 bits to 24 bits (8 bits per channel) to eliminate all color banding without requiring spatial dithering.
+### Resource Utilization (Spartan-7 `XC7S50-CSGA324-1`):
+| Resource | Used | Available | Utilization % |
+| :--- | :--- | :--- | :--- |
+| **LUT** | 7,039 | 32,600 | 21.59% |
+| **LUTRAM** | 391 | 9,600 | 4.07% |
+| **FF** | 6,906 | 65,200 | 10.59% |
+| **BRAM** | 68 | 75 | **90.67%** *(24-bit TrueColor buffer)* |
+| **DSP48E1** | 38 | 120 | 31.67% |
+| **IO** | 42 | 210 | 20.00% |
+| **BUFG** | 8 | 32 | 25.00% |
+| **MMCM** | 2 | 5 | 40.00% |
+
+### Timing Summary:
+* **Worst Negative Slack (WNS):** **-1.011 ns** (Setup violation on 100 MHz clock domain)
+* **Total Negative Slack (TNS):** -58.318 ns
+* **Failing Endpoints:** 343 / 16,439
+* **Status:** **Timing closure is NOT achieved.** Bitstream operates successfully for hardware demo purposes, but resolving the -1.011 ns setup violation via pipeline register slicing is an active priority for Week 3.
+
+---
+
+## 5. Post-Checkpoint Roadmap (Week 3 & Beyond)
+
+1. **Timing Closure Optimization (Priority 1):**
+   * Inspect implemented timing report to trace the -1.011 ns critical path (likely in `sphere_shader.sv` dot products or `sdf_scene.sv` carving comparisons) and insert pipeline register slices to reach positive WNS.
+2. **Full 3D Orbital Camera:**
+   * Connect camera yaw/pitch angles to primary ray direction rotator in `ray_gen.sv` to orbit the viewpoint completely around the carved model.
 3. **Procedural Cavern Background & 4 Primitives:**
-   - Integrate analytic box, capsule, and torus distance estimators into the primary scene distance field.
+   * Integrate analytic box, capsule, and torus distance estimators into the primary scene distance field.
+4. **BRAM Optimization / Fluid Dynamics:**
+   * Re-evaluate 24-bit buffer configuration or line-buffering if additional BRAM is required for complex fluid metaball state.

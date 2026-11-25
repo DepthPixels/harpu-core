@@ -30,7 +30,7 @@ To maintain academic integrity and build a comprehensive audit trail for the ECE
    * **Terminal Commands Executed:** The command string, exit code, and brief purpose.
    * **Debugging Log:** Root causes identified, synthesis/timing errors diagnosed, simulation mismatches caught, and their resolutions.
 3. **Log Format & Author Differentiation:**
-   * Append entries to `Documentation/AI_Documentation/session_log.md` with timestamps and brief bullet points.
+   * Append entries to `Documentation/AI_Documentation/session_log_post_checkpoint.md` with timestamps and brief bullet points (legacy Week 1–2 log is archived in `session_log.md`).
    * **Explicit Attribution:** Every logged task, file change, diagnostic step, or test must explicitly state who performed it using clear tags: **`[USER]`** or **`[AGENT]`** (e.g., `* [USER] Implemented ray_gen.sv`, `* [AGENT] Diagnosed 16-bit intermediate truncation in math expressions`).
 
 ---
@@ -57,5 +57,5 @@ Keep these project hardware invariants in mind at all times:
 
 * `Documentation/agent_rules.md` — **This file** (Operating rules & constraints).
 * `Documentation/agents_week_1.md` — Week 1 progress tracker, milestone checklists, and current status.
-* `Documentation/AI_Documentation/session_log.md` — Audit log of commands, file changes, and debugged issues.
+* `Documentation/AI_Documentation/session_log_post_checkpoint.md` — Active post-checkpoint audit log (legacy `session_log.md` archived).
 * `Documentation/ECE385_Final_Project_Proposal.pdf` — Official signed project proposal.

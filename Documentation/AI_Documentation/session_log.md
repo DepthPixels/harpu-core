@@ -368,10 +368,12 @@ This file maintains an ongoing record of file changes, terminal commands execute
 
 
 
-* **[USER]** Implemented Solutions 1 and 2 in hardware and requested verification: tightened hit threshold to `16'sh0002` in `raymarch_core.sv` and upgraded specular pipeline to $Q2.14$ in `sphere_shader.sv`.
-* **[AGENT]** Audited the implementations in [raymarch_core.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/raymarch_core.sv) and [sphere_shader.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/sphere_shader.sv):
-  1. Verified [raymarch_core.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/raymarch_core.sv): `sdf_dist < 16'sh0002` tightens surface hit tolerance by $2.5\times$ ($0.0195 \to 0.0078$).
-  2. Verified [sphere_shader.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/sphere_shader.sv): `hdp_sum >>> 2` maps correctly into $Q2.14$ ($1.0 = 16384$), intermediate squaring stages shift right by 14 (`>>> 14`), and final stage shifts right by 20 (`>>> 20`), elegantly fusing the third squarer with the $Q2.14 \to Q8.8$ color scaler. Confirmed zero bit drift and exact mathematical alignment.
+* **[USER]** Confirmed Case A (outer silhouette aliasing) is the target and noted belief that horizontal scanout interpolation was already implemented.
+* **[AGENT]** Inspected [color_mapper.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/imports/ECE%20385%20Final%20Project/color_mapper.sv) and clarified the current scanout architecture:
+  1. The existing logic in [color_mapper.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/imports/ECE%20385%20Final%20Project/color_mapper.sv) is a 1-cycle BRAM latency pre-fetch (`next_x = drawX + 1`) with nearest-neighbor coordinate truncation (`fb_x = next_x[9:1]`). There is currently no horizontal averaging register or pixel blend (`(prev_pixel + cur_pixel) >> 1`).
+  2. Presented the architectural breakdown for Grazing-Angle Silhouette Feathering in [sphere_shader.sv](file:///F:/ECE_385_Final_Project/Final_Project/Final_Project.srcs/sources_1/new/sphere_shader.sv) as the cleanest, native subpixel anti-aliasing solution: leveraging $|N_z| \to 0$ at silhouette grazing angles to softly ramp alpha into background navy (`24'h101820`), eliminating the harsh $2\times 2$ pixel boundary steps.
+
+
 
 
 

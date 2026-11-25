@@ -59,6 +59,8 @@ module harpu_top (
     logic signed [15:0] carve_radius;
     logic signed [15:0] inv_carve_radius;
 
+    logic [7:0] fps_display;
+
     hex_driver HexA (
         .clk(Clk),
         .reset(reset_ah),
@@ -124,7 +126,6 @@ module harpu_top (
     end
 
     logic [7:0] frame_counter;
-    logic [7:0] fps_display;
     logic       frame_done;
     always_ff @(posedge Clk or posedge reset_ah) begin
         if (reset_ah) begin
@@ -144,8 +145,6 @@ module harpu_top (
     raymarch_core raymarch_inst (
         .clk(Clk),
         .reset(reset_ah),
-        .drawX(drawX),
-        .drawY(drawY),
         .carve_en(carve_en),
         .carve_x(carve_x),
         .carve_y(carve_y),
@@ -161,7 +160,6 @@ module harpu_top (
         .fb_din(fb_din_a),
         .fb_we(fb_wea_a),
         .frame_done(frame_done),
-        .inv_carve_radius(inv_carve_radius),
         .sphere_material(sphere_material)
     );
 
