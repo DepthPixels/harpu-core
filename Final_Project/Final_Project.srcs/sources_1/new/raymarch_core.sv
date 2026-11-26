@@ -16,6 +16,8 @@ module raymarch_core (
     input  logic signed [15:0] half_z,
     input  logic signed [15:0] carve_radius,
     input  logic        [1:0]  sphere_material,
+    input  logic        [1:0]  surface_mode,
+    input  logic        [7:0]  anim_phase,
     
     output logic [16:0] fb_addr,
     output logic [23:0] fb_din,
@@ -374,7 +376,7 @@ module raymarch_core (
                             slot_nz[ray_tag_out] <= 16'sh0000;
 
                             slot_state[ray_tag_out] <= S_NORM0;
-                        end else if (slot_ray_t[ray_tag_out] >= ray_t_max || slot_step_cnt[ray_tag_out] >= 16'd24) begin // Miss
+                        end else if (slot_ray_t[ray_tag_out] >= ray_t_max || slot_step_cnt[ray_tag_out] >= 16'd48) begin // Miss
                             // Retire Miss
                             pipe_we <= 1'b1;
                             pipe_hit <= 1'b0;
@@ -469,6 +471,8 @@ module raymarch_core (
         .carve_y(carve_y),
         .carve_z(carve_z),
         .carve_radius(carve_radius),
+        .surface_mode(surface_mode),
+        .anim_phase(anim_phase),
         .in_valid(sdf_in_valid),
         .dist_out(sdf_dist),
         .out_valid(sdf_valid),

@@ -221,11 +221,12 @@ module sphere_shader (
                 b_base = 8'd0;
             end
             2'b01: begin
-                // Green / Emerald Jade
-                r_base = diffuse >> 3;
-                g_add  = 9'd32 + 9'(diffuse);
+                // Turquoise
+                r_add  = 9'd24 + 9'(diffuse >> 1) + 9'(diffuse >> 4);
+                r_base = (r_add > 9'd255) ? 8'd255 : r_add[7:0];
+                g_add  = 9'd42 + 9'(diffuse);
                 g_base = (g_add > 9'd255) ? 8'd255 : g_add[7:0];
-                b_add  = 9'd16 + 9'(diffuse >> 1);
+                b_add  = 9'd40 + 9'(diffuse);
                 b_base = (b_add > 9'd255) ? 8'd255 : b_add[7:0];
             end
             2'b10: begin
@@ -237,11 +238,11 @@ module sphere_shader (
                 b_base = (b_add > 9'd255) ? 8'd255 : b_add[7:0];
             end
             2'b11: begin
-                // Purple / Amethyst
-                r_add  = 9'd16 + 9'(diffuse);
+                // Grey
+                r_add  = 9'd30 + 9'(diffuse >> 1) + 9'(diffuse >> 2);
                 r_base = (r_add > 9'd255) ? 8'd255 : r_add[7:0];
-                g_base = 8'd0;
-                b_add  = 9'd32 + 9'(diffuse);
+                g_base = (r_add > 9'd255) ? 8'd255 : r_add[7:0];
+                b_add  = 9'd32 + 9'(diffuse >> 1) + 9'(diffuse >> 2);
                 b_base = (b_add > 9'd255) ? 8'd255 : b_add[7:0];
             end
             default: begin

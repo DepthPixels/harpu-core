@@ -139,6 +139,8 @@ module harpu_top (
     end
 
     logic [1:0] sphere_material;
+    logic [1:0] surface_mode;
+    logic       anim_phase;
     logic signed [15:0] light_dir_x, light_dir_y, light_dir_z;
     logic signed [15:0] half_x, half_y, half_z;
 
@@ -160,7 +162,9 @@ module harpu_top (
         .fb_din(fb_din_a),
         .fb_we(fb_wea_a),
         .frame_done(frame_done),
-        .sphere_material(sphere_material)
+        .sphere_material(sphere_material),
+        .surface_mode(surface_mode),
+        .anim_phase(anim_phase)
     );
 
     carve_controller carve_controller_inst (
@@ -181,6 +185,8 @@ module harpu_top (
         .carve_en(carve_en),
         .sphere_material(sphere_material),
         .control_mode(control_mode),
+        .surface_mode(surface_mode),
+        .anim_phase(anim_phase),
         .inv_carve_radius(inv_carve_radius)
     );
 

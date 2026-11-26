@@ -229,6 +229,7 @@ int main(int argc, char** argv) {
     float current_fps = 0.0f;
     const int BATCH_SIZE = 1024;
     const char* mode_names[4] = {"CARVE", "LIGHT", "CAM", "MODE3"};
+    const char* surf_names[4] = {"SMOOTH", "GYROID", "ROCKY", "RIB"};
 
     while (running && !Verilated::gotFinish()) {
         SDL_Event event;
@@ -340,11 +341,11 @@ int main(int argc, char** argv) {
                 float cz = (float)(int16_t)top->carve_z / 256.0f;
                 float cr = (float)(int16_t)top->carve_radius / 256.0f;
 
-                char title[160];
+                char title[180];
                 snprintf(title, sizeof(title),
-                    "HARPU 3D | %.1f FPS | %s | Mat:%u | Carve:[%.2f, %.2f, %.2f] R:%.2f %s",
-                    current_fps, mode_names[top->control_mode & 3], top->sphere_material & 3,
-                    cx, cy, cz, cr, top->carve_en ? "[ON]" : "[OFF]");
+                    "HARPU 3D | %.1f FPS | %s | %s | Mat:%u | Carve:[%.2f, %.2f, %.2f] R:%.2f %s",
+                    current_fps, mode_names[top->control_mode & 3], surf_names[top->surface_mode & 3],
+                    top->sphere_material & 3, cx, cy, cz, cr, top->carve_en ? "[ON]" : "[OFF]");
                 SDL_SetWindowTitle(window, title);
             }
         }

@@ -16,12 +16,14 @@ module sim_top (
     output logic signed [15:0] carve_radius,
     output logic               carve_en,
     output logic        [1:0]  sphere_material,
-    output logic        [1:0]  control_mode
+    output logic        [1:0]  control_mode,
+    output logic        [1:0]  surface_mode
 );
 
     logic signed [15:0] light_dir_x, light_dir_y, light_dir_z;
     logic signed [15:0] half_x, half_y, half_z;
     logic signed [15:0] inv_carve_radius;
+    logic        [7:0]  anim_phase;
 
     carve_controller carve_ctrl_inst (
         .clk(clk),
@@ -41,7 +43,9 @@ module sim_top (
         .inv_carve_radius(inv_carve_radius),
         .carve_en(carve_en),
         .sphere_material(sphere_material),
-        .control_mode(control_mode)
+        .control_mode(control_mode),
+        .surface_mode(surface_mode),
+        .anim_phase(anim_phase)
     );
 
     raymarch_core raymarch_inst (
@@ -59,6 +63,8 @@ module sim_top (
         .half_z(half_z),
         .carve_radius(carve_radius),
         .sphere_material(sphere_material),
+        .surface_mode(surface_mode),
+        .anim_phase(anim_phase),
         .fb_addr(fb_addr),
         .fb_din(fb_din),
         .fb_we(fb_we),

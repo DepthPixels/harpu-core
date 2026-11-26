@@ -59,7 +59,9 @@ module carve_controller(
     output logic signed [15:0] inv_carve_radius,
     output logic               carve_en,
     output logic        [1:0]  sphere_material,
-    output logic        [1:0]  control_mode
+    output logic        [1:0]  control_mode,
+    output logic        [1:0]  surface_mode,
+    output logic        [7:0]  anim_phase
 );
 
     logic signed [15:0] step_size = 16'sh0010;
@@ -107,6 +109,12 @@ module carve_controller(
     assign l_shoulder_button = gamepad_button_data[24];
     assign r_shoulder_button = gamepad_button_data[25];
 
+    logic dpad_up, dpad_right, prev_dpad_up, prev_dpad_right; // dpad_up, dpad_down, dpad_left later
+    assign dpad_up    = (gamepad_button_data[19:16] == 4'b0000);
+    // assign dpad_down  = (gamepad_button_data[19:16] == 4'b0100);
+    // assign dpad_left  = (gamepad_button_data[19:16] == 4'b0110);
+    assign dpad_right = (gamepad_button_data[19:16] == 4'b0010);
+
     // Signed-magnitude stick calibration
     logic signed [15:0] diff_ls_x, diff_ls_y, diff_rs_x, diff_rs_y;
     logic signed [15:0] mag_ls_x, mag_ls_y, mag_rs_x, mag_rs_y;
@@ -122,6 +130,11 @@ module carve_controller(
     logic signed [15:0] r_sin_theta_light, r_cos_theta_light, r_sin_phi_light, r_cos_phi_light;
     logic signed [15:0] r_delta_x, r_delta_y, r_delta2_x, r_delta2_y;
     logic               r_mouse_packet_pulse;
+
+    // Animation
+    logic anim_en;
+    logic [8:0] anim_cnt;
+    assign anim_phase = anim_cnt[8:1];
 
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
@@ -225,8 +238,13 @@ module carve_controller(
             prev_r_shoulder_button <= 1'b0;
             prev_square_button <= 1'b0;
             prev_cross_button <= 1'b0;
+            prev_dpad_up <= 1'b0;
+            prev_dpad_right <= 1'b0;
             theta_light <= 8'd32; // ~45 degrees
             phi_light   <= 8'd20; // ~28 degrees elevation
+            surface_mode <= 2'b00;
+            anim_cnt <= 9'd0;
+            anim_en <= 1'b0;
         end else if (is_gamepad) begin
             if (tick_pulse) begin
                 prev_square_button <= square_button;
@@ -234,6 +252,11 @@ module carve_controller(
                 prev_triangle_button <= triangle_button;
                 prev_l_shoulder_button <= l_shoulder_button;
                 prev_r_shoulder_button <= r_shoulder_button;
+                prev_dpad_up <= dpad_up;
+                prev_dpad_right <= dpad_right;
+                if (anim_en) begin
+                    anim_cnt <= anim_cnt + 9'd1;
+                end
                 // Reset Carve Position and Radius
                 if (circle_button) begin// Rising Edge
                     carve_x <= 16'sh005A;
@@ -245,9 +268,18 @@ module carve_controller(
                     control_mode <= 2'b00;
                     theta_light <= 8'd32; // ~45 degrees
                     phi_light   <= 8'd20; // ~28 degrees elevation
+                    surface_mode <= 2'b00;
                 end else begin
                     if (square_button && !prev_square_button) // Rising Edge
                         control_mode <= (control_mode >= 2'b10) ? 2'b00 : control_mode + 2'b01;
+
+                    // Change Surface Mode
+                    if (dpad_right && !prev_dpad_right) // Rising Edge
+                        surface_mode <= surface_mode + 2'b01;
+
+                    // Enable/Disable Animation
+                    if (dpad_up && !prev_dpad_up) // Rising Edge
+                        anim_en <= ~anim_en;
 
                     if (control_mode == 2'b00) begin
                         if (cross_button && !prev_cross_button) // Rising Edge
@@ -324,39 +356,15 @@ module carve_controller(
     always_ff @(posedge clk or posedge reset) begin
         if (reset) begin
             inv_carve_radius <= 16'sh02D8;
-        end else begin
-            inv_carve_radius <= inv_rom[carve_radius[7:0]];
-        end
-    end
-
-    always_ff @(posedge clk or posedge reset) begin
-        if (reset) begin
             tick_dly <= 1'b0;
-        end else begin
-            tick_dly <= frame_tick;
-        end
-    end
-
-    always_ff @(posedge clk or posedge reset) begin
-        if (reset) begin
             mouse_strobe_dly <= 1'b0;
-        end else begin
-            mouse_strobe_dly <= mouse_kbd_stick_data[25];
-        end
-    end
-
-    always_ff @(posedge clk or posedge reset) begin
-        if (reset) begin
             gamepad_strobe_dly <= 1'b0;
-        end else begin
-            gamepad_strobe_dly <= gamepad_button_data[31];
-        end
-    end
-
-    always_ff @(posedge clk or posedge reset) begin
-        if (reset) begin
             usb_data <= 64'b0;
         end else begin
+            inv_carve_radius <= inv_rom[carve_radius[7:0]];
+            tick_dly <= frame_tick;
+            mouse_strobe_dly <= mouse_kbd_stick_data[25];
+            gamepad_strobe_dly <= gamepad_button_data[31];
             usb_data <= usb_data_in;
         end
     end
